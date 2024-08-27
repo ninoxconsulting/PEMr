@@ -3,10 +3,15 @@ Title: Meta package for development of machine-learning predictive
     ecosystem maps
 Version: 0.0.0.9000
 Authors@R: c(
-    person("First", "Last", , "first.last@example.com", role = c("aut", "cre")),
+    person("Genevieve", "Perkins", , "gen@ninoxconsulting.ca", role = c("aut", "cre")),
+    person("Clair", "Armour", , "claire.armour@gov.bc.ca", role = c("aut")),
+    person("Andy", "Teucher", , "andy@andyteucher.ca", role = c("aut")),
     person("Province of British Columbia", role = "cph")
   )
-Description: to be filled
+Description: PEMr is a "meta" package that installs, and optionally loads,
+    all of the packages in the PEMr family of packages. This is similar in spirit
+    to how the "tidyverse" package operates as an umbrella for the packages in 
+    the "tidyverse" suite of packages.
 License: Apache License (== 2.0) | file LICENSE
 Imports:
     PEMprepr
