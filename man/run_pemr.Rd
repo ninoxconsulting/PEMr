@@ -2,7 +2,7 @@
 % Please edit documentation in R/run_pemr.R
 \name{run_pemr}
 \alias{run_pemr}
-\title{Run PEMr libraries}
+\title{Attach PEMr packages}
 \usage{
 run_pemr()
 }
@@ -10,7 +10,8 @@ run_pemr()
 TRUE or FALSE
 }
 \description{
-Set up required libraries to complete Predictive Ecosystem Mapping. Checks first if the required libraires exist and downloads if needed.
+Calling \code{run_pemr()} will attach all of the PEMr family of packages: \code{PEMprepr},
+\code{PEMsamplr}, and \code{PEMmodelr}.
 }
 \examples{
 run_pemr()
