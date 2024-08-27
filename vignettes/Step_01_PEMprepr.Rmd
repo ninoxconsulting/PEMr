@@ -1,5 +1,5 @@
 ---
-title: "01_PEMprepr"
+title: "Step_01_PEMprepr"
 subtitle: "Prepare basedata for stude area"
 author: "G. Perkins"
 date: "2023-06-19"
@@ -20,7 +20,8 @@ editor_options:
 
 knitr::opts_chunk$set(
   collapse = TRUE,
-  comment = "#>"
+  comment = "#>",
+  eval = FALSE
 )
 ```
 
