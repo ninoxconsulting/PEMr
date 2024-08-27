@@ -10,8 +10,16 @@
 #' run_pemr()
 run_pemr <- function(){
 
-  library(PEMprepr)
-  library(PEMsamplr)
-  library(PEMmodelr)
+  pkgs <- c(
+    "PEMprepr" #,
+    # Omitting PEMsamplr and PEMmodelr for now as installation is failing
+    # "PEMsamplr",
+    # "PEMmodelr"
+  )
+  
+  suppressPackageStartupMessages(
+    lapply(pkgs, library, character.only = TRUE)
+  )
 
 }
+
