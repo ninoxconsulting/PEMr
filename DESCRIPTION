@@ -1,5 +1,6 @@
 Package: PEMr
-Title: Meta package for development of machine-learning predictive ecosystem maps
+Title: Meta package for development of machine-learning predictive
+    ecosystem maps
 Version: 0.0.0.9000
 Authors@R: c(
     person("First", "Last", , "first.last@example.com", role = c("aut", "cre")),
@@ -7,10 +8,19 @@ Authors@R: c(
   )
 Description: to be filled
 License: Apache License (== 2.0) | file LICENSE
-Encoding: UTF-8
-Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.2.3
+Imports:
+    PEMprepr
+    PEMsamplr
+    PEMmodelr
 Suggests: 
     knitr,
     rmarkdown
-VignetteBuilder: knitr
+Remotes:
+    ninoxconsulting/PEMprepr
+    bcgov/PEMsamplr
+    bcgov/modelr
+VignetteBuilder: 
+    knitr
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.2.3
