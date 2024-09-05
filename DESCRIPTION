@@ -17,6 +17,11 @@ Description: PEMr is a "meta" package that installs all of the packages in the
 License: Apache License (== 2.0) | file LICENSE
 Imports:
     cli,
+    fs,
+    usethis,
+    rstudioapi,
+    rlang,
+    withr,
     PEMprepr
 Suggests: 
     knitr,

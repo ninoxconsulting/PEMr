@@ -6,5 +6,5 @@
 NULL
 
 unused_function_stub <- function() {
-  PEMprepr::setup_folders
+  PEMprepr::read_fid
 }

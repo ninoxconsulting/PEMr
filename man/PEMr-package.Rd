@@ -6,7 +6,7 @@
 \alias{PEMr-package}
 \title{PEMr: Meta package for development of machine-learning predictive ecosystem maps}
 \description{
-PEMr is a "meta" package that installs, and optionally loads, all of the packages in the PEMr family of packages. This is similar in spirit to how the "tidyverse" package operates as an umbrella for the packages in the "tidyverse" suite of packages.
+PEMr is a "meta" package that installs all of the packages in the PEMr family of packages. This is similar in spirit to how the "tidyverse" package operates as an umbrella for the packages in the "tidyverse" suite of packages.
 }
 \author{
 \strong{Maintainer}: Genevieve Perkins \email{gperkins@ninoxconsulting.ca} (\href{https://orcid.org/0000-0003-2663-5904}{ORCID})
