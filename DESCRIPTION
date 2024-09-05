@@ -10,10 +10,10 @@ Authors@R: c(
            comment = c(ORCID = "0000-0002-7840-692X")),
     person("Province of British Columbia", role = "cph")
   )
-Description: PEMr is a "meta" package that installs, and optionally loads,
-    all of the packages in the PEMr family of packages. This is similar in
-    spirit to how the "tidyverse" package operates as an umbrella for the
-    packages in the "tidyverse" suite of packages.
+Description: PEMr is a "meta" package that installs all of the packages in the 
+    PEMr family of packages. This is similar in spirit to how the "tidyverse" 
+    package operates as an umbrella for the packages in the "tidyverse" suite of 
+    packages.
 License: Apache License (== 2.0) | file LICENSE
 Imports:
     cli,
