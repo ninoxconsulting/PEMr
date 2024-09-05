@@ -6,6 +6,8 @@ fid <- read_fid()
 
 aoi <- snap_aoi()
 
+## Works up to here
+
 create_base_vectors()
 
 v <- list.files(path = fid$shape_dir_0010[1], pattern = ".gpkg", recursive = TRUE)
