@@ -1,17 +1,10 @@
-library(PEMr)
-
-# load all pem packages
-run_pemr()
+library(PEMprepr)
 
 project_name <- "{{ aoi_name }}"
 
 fid <- read_fid()
 
-aoi_path <- create_aoi()
-
-## works this far...
-
-aoi <- read_sf(aoi_path)
+aoi <- snap_aoi()
 
 create_base_vectors()
 
