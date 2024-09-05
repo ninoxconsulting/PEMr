@@ -76,7 +76,9 @@ create_pemr_project <- function(
   invisible(usethis::proj_get())
 }
 
-create_directories <- function(file = fs::path_package("PEMr", "extdata/directory_structure.csv")) {
+create_directories <- function(
+    file = fs::path_package("PEMr", "extdata/directory_structure.csv")
+) {
   dir_df <- utils::read.csv(file)
   
   project_dirs <- fs::path(
