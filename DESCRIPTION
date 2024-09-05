@@ -16,6 +16,7 @@ Description: PEMr is a "meta" package that installs, and optionally loads,
     packages in the "tidyverse" suite of packages.
 License: Apache License (== 2.0) | file LICENSE
 Imports:
+    cli,
     PEMprepr
 Suggests: 
     knitr,
