@@ -33,3 +33,15 @@ test_that("create_project() works with aoi gpkg", {
     )
   )
 })
+
+test_that("create_project() when specified aoi pkg doesn't exist", {
+  dir <- withr::local_tempdir()
+
+  expect_warning(
+    create_pemr_project(
+      dir,
+      aoi_name = "test_aoi",
+      aoi_file = "foo.gpkg"
+    )
+  )
+})
