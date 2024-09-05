@@ -25,6 +25,5 @@ remotes::install_github("bcgov/PEMr", build_vignettes = TRUE)
 library(PEMr)
 
 run_pemr()
-
 ```
 
