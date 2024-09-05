@@ -3,7 +3,8 @@ test_that("create_project() creates a project", {
 
   create_pemr_project(
     dir,
-    aoi_name = "test_aoi"
+    aoi_name = "test_aoi",
+    rstudio = TRUE
   )
 
   expect_snapshot_value(
