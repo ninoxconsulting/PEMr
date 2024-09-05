@@ -60,8 +60,12 @@ create_pemr_project <- function(
   
   aoi_dest_path <- fid$dir_0010_vector$path_abs
   if (!is.null(aoi_file)) {
-    fs::file_copy(aoi_file, aoi_dest_path)
-  } else {
+    if (file.exists(aoi_file)) {
+      fs::file_copy(aoi_file, aoi_dest_path)
+    } else {
+      cli::cli_warn("{.path {aoi_file}} does not exist. Proceeding to set up project without copying it. Please place it manually in {.path {aoi_dest_path}}")
+    }
+    } else {
     cli::cli_alert_warning("No AOI file specified. You will need to copy an AOI file to {.path {aoi_dest_path}}")
   }
   
