@@ -1,5 +1,5 @@
 ---
-title: "01_PEMprepr"
+title: "Step_01_PEMprepr"
 subtitle: "Prepare basedata for stude area"
 author: "G. Perkins"
 date: "2023-06-19"
@@ -20,15 +20,16 @@ editor_options:
 
 knitr::opts_chunk$set(
   collapse = TRUE,
-  comment = "#>"
+  comment = "#>",
+  eval = FALSE
 )
 ```
 
 ```{r setup, message=FALSE, warning=FALSE}
-#devtools::load_all("D:\\PEM_DATA\\PEMsamplr")
-#devtools::load_all("D:\\PEM_DATA\\PEMprepr")
+# devtools::load_all("D:\\PEM_DATA\\PEMsamplr")
+# devtools::load_all("D:\\PEM_DATA\\PEMprepr")
 
-remotes::install_github("bcgov/PEMr", build_vignettes = FALSE)
+remotes::install_github("ninoxconsulting/PEMr", build_vignettes = FALSE)
 
 library(PEMr)
 
@@ -39,13 +40,12 @@ library(PEMprepr)
 library(ggplot2)
 library(sf)
 library(terra)
-
 ```
 
 `PEMprepr`, short for _Predictive Ecosystem Mapping -- Preparation_ is the first of a
 series of packages supporting the British Columbia Biogeoecosystem Classification's
 Predictive Ecosystem Mapping (PEM) project.  See [BC-BEC](https://www.for.gov.bc.ca/HRE/becweb/index.html)
-and [`PEMr`](https://github.com/bcgov/PEMr) on _GitHub_for details about the BC BEC classification system and, the PEM Project.
+and [`PEMr`](https://github.com/ninoxconsulting/PEMr) on _GitHub_for details about the BC BEC classification system and, the PEM Project.
 
 In the example below it is assumed that you are running the following within a new R project.
 
@@ -60,7 +60,6 @@ In the example below it is assumed that you are running the following within a n
 ```{r}
 # set up the folder structure and define folder names in object fid
 fid <- setup_folders("CanyonCreek")
-
 ```
 
 
@@ -78,15 +77,14 @@ folder names.
 
 Load the spatial data
 ```{r}
-# Read in the aoi data from the test data 
-aoi_raw <- system.file("extdata", "aoi.gpkg", package ="PEMprepr")
+# Read in the aoi data from the test data
+aoi_raw <- system.file("extdata", "aoi.gpkg", package = "PEMprepr")
 aoi_raw <- st_read(aoi_raw)
 
-# or read in local aoi 
-#aoi_raw <- st_read(file.path("CanyonCreek", "00_raw_inputs", "vector", "aoi.gpkg"))
+# or read in local aoi
+# aoi_raw <- st_read(file.path("CanyonCreek", "00_raw_inputs", "vector", "aoi.gpkg"))
 
 sf::st_bbox(aoi_raw) ## note extent
-
 ```
 
 One concern, with this _area-of-interest_ (`aoi`) is that the bounding box
@@ -110,7 +108,6 @@ sf::st_bbox(aoi_shrink)
 
 # write out (this will be added to function later on)
 sf::st_write(aoi, file.path(fid$shape_dir_1010[1], "aoi_snapped.gpkg"))
-
 ```
 
 
@@ -120,16 +117,19 @@ A standard set of Vector data is used for subsequent sample planning and is base
 
 ```{r, eval=FALSE}
 aoi <- st_read(file.path(fid$shape_dir_1010[1], "aoi_snapped.gpkg"))
-#aoi <- st_read("D:/PEM_DATA/BEC_DevExchange_Work/DateCreek_AOI/0_raw_inputs/base_layers/aoi.gpkg")
+# aoi <- st_read("D:/PEM_DATA/BEC_DevExchange_Work/DateCreek_AOI/0_raw_inputs/base_layers/aoi.gpkg")
 
-create_base_vectors(in_aoi = aoi,
-                    out_path = fid$shape_dir_0010[1])
+create_base_vectors(
+  in_aoi = aoi,
+  out_path = fid$shape_dir_0010[1]
+)
 
-v <- list.files(path = fid$shape_dir_0010[1], pattern = ".gpkg",
-                recursive = TRUE)
+v <- list.files(
+  path = fid$shape_dir_0010[1], pattern = ".gpkg",
+  recursive = TRUE
+)
 
 v
-
 ```
 
 files are saved in _geopackage_ format.
@@ -137,17 +137,19 @@ files are saved in _geopackage_ format.
 Once the vector data is reviewed and edited where appropriate we can save a final version in the "clean input data folder". 
 
 ```{r}
-
 origindir <- fid$shape_dir_0010[1]
-filestocopy <- list.files(path = fid$shape_dir_0010[1], pattern = ".gpkg",recursive = TRUE)
+filestocopy <- list.files(path = fid$shape_dir_0010[1], pattern = ".gpkg", recursive = TRUE)
 
 targetdir <- fid$shape_dir_1010[1]
 
-lapply(filestocopy, function(x) file.copy(paste (origindir, x , sep = "/"),  
-          paste (targetdir,x, sep = "/"), recursive = FALSE,  copy.mode = TRUE))
+lapply(filestocopy, function(x) {
+  file.copy(paste(origindir, x, sep = "/"),
+    paste(targetdir, x, sep = "/"),
+    recursive = FALSE, copy.mode = TRUE
+  )
+})
 
-#file.remove(filestocopy)
-
+# file.remove(filestocopy)
 ```
 
 
@@ -158,12 +160,10 @@ lapply(filestocopy, function(x) file.copy(paste (origindir, x , sep = "/"),
 The snapped `aoi` can be used to create a raster template.  In the example below a 25m^2^ raster template is created.
 
 ```{r}
-
 # create a blank raster template
 r5 <- create_template(aoi, 5)
-#r10 <- create_template(aoi, 10)
+# r10 <- create_template(aoi, 10)
 r25 <- create_template(aoi, 25)
-
 ```
 
 # Generation of raster covariates
@@ -179,29 +179,25 @@ Steps to create the covariates
 ## Import the terrain model
 
 ```{r}
-
 # read in base DEM and align the dEM
-dem <- system.file("extdata", "DTM.tif",package = "PEMprepr")
+dem <- system.file("extdata", "DTM.tif", package = "PEMprepr")
 dem <- terra::rast(dem)
 
 ## or alternate  get external TRIM data for DEM
 
 library(bcmaps)
-#trim_raw <- cded_raster(aoi_landscape)
+# trim_raw <- cded_raster(aoi_landscape)
 trim_raw <- cded_raster(aoi)
 
-# convert the trim to matching raster 
+# convert the trim to matching raster
 trim <- terra::rast(trim_raw)
 trim <- terra::project(trim, r25)
 
-# 5m resolution option 
+# 5m resolution option
 trim <- terra::rast(trim_raw)
 trim5 <- terra::project(trim, r5)
 
 # need to save and then input filepath rather than the actual Dem
-
-
-
 ```
 
 ## Create the covariates
@@ -210,31 +206,35 @@ Note that the pre-defined output directory `fid$cov_dir_1020[2]`, created using 
 
 
 ```{r, eval=FALSE}
-
-layer_options <- c("sinksfilled", "sinkroute", "dem_preproc", "slope_aspect_curve",
-               "tcatchment", "tca", "scatchment", "twi", "channelsnetwork",
-               "overlandflow", "overlandflow2", "multiresflatness", "multiresflatness2",
-               "multiresflatness3", "tri", "convergence", "openness",
-               "dah", "tpi", "ridgevalley", "mrn", "flowaccumulation",
-               "slopelength", "flowaccumulation2", "flowaccumulation3",
-               "flowpathlength", "flowpathlength2", "flowpathlength3", "lsfactor",
-               "solarrad", "convexity", "vertdistance", "tci_low",
-               "swi", "windexp", "texture", "protection", "vrm",
-               "mbi", "mscale_tpi", "relposition", "slopecurvatures",
-               "steepestslope", "upslopearea")
+layer_options <- c(
+  "sinksfilled", "sinkroute", "dem_preproc", "slope_aspect_curve",
+  "tcatchment", "tca", "scatchment", "twi", "channelsnetwork",
+  "overlandflow", "overlandflow2", "multiresflatness", "multiresflatness2",
+  "multiresflatness3", "tri", "convergence", "openness",
+  "dah", "tpi", "ridgevalley", "mrn", "flowaccumulation",
+  "slopelength", "flowaccumulation2", "flowaccumulation3",
+  "flowpathlength", "flowpathlength2", "flowpathlength3", "lsfactor",
+  "solarrad", "convexity", "vertdistance", "tci_low",
+  "swi", "windexp", "texture", "protection", "vrm",
+  "mbi", "mscale_tpi", "relposition", "slopecurvatures",
+  "steepestslope", "upslopearea"
+)
 
 # run a test covariate
-create_covariates(dtm = trim5,           ## raster created above
-                  SAGApath = "C:/SAGA/saga-7.7.0_x64/", ## Where SAGA GIS is installed
-                  output = fid$cov_dir_1020[2], ## from the setup_folders above
-                  layers = "sinksfilled")        ## test one is working 
+create_covariates(
+  dtm = trim5, ## raster created above
+  SAGApath = "C:/SAGA/saga-7.7.0_x64/", ## Where SAGA GIS is installed
+  output = fid$cov_dir_1020[2], ## from the setup_folders above
+  layers = "sinksfilled"
+) ## test one is working
 
-# run all covariates 
-create_covariates(dtm = trim5,           ## raster created above
-                  SAGApath = "C:/SAGA/saga-7.7.0_x64/", ## Where SAGA GIS is installed
-                  output = fid$cov_dir_1020[2], ## from the setup_folders above
-                  layers = c( "all"))       ## use all or one of the above
-
+# run all covariates
+create_covariates(
+  dtm = trim5, ## raster created above
+  SAGApath = "C:/SAGA/saga-7.7.0_x64/", ## Where SAGA GIS is installed
+  output = fid$cov_dir_1020[2], ## from the setup_folders above
+  layers = c("all")
+) ## use all or one of the above
 ```
 
 
@@ -246,26 +246,28 @@ _Note: As SAGA-GIS is used the files resulting files are all saved in `.sdat` fo
 
 
 ```{r, eval=FALSE}
+l <- list.files(
+  path = fid$cov_dir_1020[2], pattern = ".sdat$",
+  recursive = TRUE
+)
 
-l <- list.files(path = fid$cov_dir_1020[2], pattern = ".sdat$",
-                recursive = TRUE)
-
-l 
+l
 ```
 
 
 Create a bec raster to match the template sizes 
 
 ```{r}
-
 bec_sf <- sf::st_read(file.path(fid$shape_dir_1010[1], "bec.gpkg")) %>%
-  sf::st_cast(., "MULTIPOLYGON") 
+  sf::st_cast(., "MULTIPOLYGON")
 
-bec_code <- bec_sf %>% st_drop_geometry()  %>% dplyr::select(MAP_LABEL) %>%
-    unique() 
+bec_code <- bec_sf %>%
+  st_drop_geometry() %>%
+  dplyr::select(MAP_LABEL) %>%
+  unique()
 
-bec_code <- bec_code %>% 
-    mutate(bgc_unique_code = seq(1, length(bec_code$MAP_LABEL),1))
+bec_code <- bec_code %>%
+  mutate(bgc_unique_code = seq(1, length(bec_code$MAP_LABEL), 1))
 
 bec_sf <- dplyr::left_join(bec_sf, bec_code)
 
@@ -279,12 +281,11 @@ bec_ras25 <- terra::rasterize(bec_vec, r25, field = "MAP_LABEL")
 terra::writeRaster(bec_ras25, file.path(fid$cov_dir_1020[2], "25m", "bec.tif"), overwrite = TRUE)
 
 
-# generate a 5m raster 
+# generate a 5m raster
 
 bec_ras5 <- terra::rasterize(bec_vec, r5, field = "MAP_LABEL")
 
 terra::writeRaster(bec_ras5, file.path(fid$cov_dir_1020[2], "5m", "bec.tif"), overwrite = TRUE)
-
 ```
 
 
@@ -293,8 +294,6 @@ terra::writeRaster(bec_ras5, file.path(fid$cov_dir_1020[2], "5m", "bec.tif"), ov
 ## Create fuzzy matrix 
 
 ```{r}
-
-#create_fuzzy_matrix()
-
+# create_fuzzy_matrix()
 ```
 

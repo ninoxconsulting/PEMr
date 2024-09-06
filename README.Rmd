@@ -33,6 +33,8 @@ knitr::opts_chunk$set(
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![img](https://img.shields.io/badge/Lifecycle-Experimental-339999)](https://github.com/bcgov/repomountie/blob/master/doc/lifecycle-badges.md)
 
+[![R-CMD-check](https://github.com/ninoxconsulting/PEMr/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/ninoxconsulting/PEMr/actions/workflows/R-CMD-check.yaml)
+[![Codecov test coverage](https://codecov.io/gh/ninoxconsulting/PEMr/graph/badge.svg)](https://app.codecov.io/gh/ninoxconsulting/PEMr)
 <!-- badges: end -->
 
 
@@ -68,17 +70,15 @@ The broader **Predictive Ecosystem Mapping Methods Development project** is a co
 You can install `PEMr`development version from GitHub, using the [remotes](https://cran.r-project.org/package=remotes) package:
 
 ```{r eval=FALSE}
-
 install.packages("remotes")
-remotes::install_github("bcgov/PEMr")
+remotes::install_github("ninoxconsulting/PEMr")
 library(PEMr)
-
 ```
 
 
 ### Vignettes
 
-- [PEMprepr](https://github.com/bcgov/PEMprepr/blob/master/vignettes/PEMprepr.Rmd)
+- [PEMprepr](https://github.com/ninoxconsulting/PEMprepr/blob/master/vignettes/PEMprepr.Rmd)
 - How to prepare base data from ML-PEM mapping
 - How to develop a sample plan (road)
 - How to develop a sample plan (helicopter)
@@ -94,7 +94,8 @@ This project is currently under rapid development. If you are interested in the 
 
 ### Getting Help or Reporting an Issue
 
-To report bugs/issues/feature requests, please file an [issue](https://github.com/bcgov/PEMr/issues/).
+To report bugs/issues/feature requests, please file an 
+[issue](https://github.com/ninoxconsulting/PEMr/issues/).
 
 ### How to Contribute
 
@@ -108,8 +109,7 @@ Please note that this project is released with a [Contributor Code of Conduct](C
 ### Citation
 
 ```{r, echo=FALSE, comment=""}
-#citation("PEMr")
-
+# citation("PEMr")
 ```
 
 

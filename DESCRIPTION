@@ -1,16 +1,37 @@
 Package: PEMr
-Title: Meta package for development of machine-learning predictive ecosystem maps
+Title: Meta package for development of machine-learning predictive
+    ecosystem maps
 Version: 0.0.0.9000
 Authors@R: c(
-    person("First", "Last", , "first.last@example.com", role = c("aut", "cre")),
+    person("Genevieve", "Perkins", , "gperkins@ninoxconsulting.ca", role = c("aut", "cre"),
+           comment = c(ORCID = "0000-0003-2663-5904")),
+    person("Clair", "Armour", , "claire.armour@gov.bc.ca", role = "aut"),
+    person("Andy", "Teucher", , "andy@andyteucher.ca", role = "aut",
+           comment = c(ORCID = "0000-0002-7840-692X")),
     person("Province of British Columbia", role = "cph")
   )
-Description: to be filled
+Description: PEMr is a "meta" package that installs all of the packages in the 
+    PEMr family of packages. This is similar in spirit to how the "tidyverse" 
+    package operates as an umbrella for the packages in the "tidyverse" suite of 
+    packages.
 License: Apache License (== 2.0) | file LICENSE
-Encoding: UTF-8
-Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.2.3
+Imports:
+    cli,
+    fs,
+    usethis,
+    rstudioapi,
+    rlang,
+    withr,
+    PEMprepr
 Suggests: 
     knitr,
-    rmarkdown
-VignetteBuilder: knitr
+    rmarkdown,
+    testthat (>= 3.0.0)
+VignetteBuilder: 
+    knitr
+Remotes:
+    ninoxconsulting/PEMprepr
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2
+Config/testthat/edition: 3
