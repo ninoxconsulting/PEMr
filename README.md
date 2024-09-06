@@ -18,8 +18,6 @@ See the License for the specific language governing permissions and limitations 
 [![img](https://img.shields.io/badge/Lifecycle-Experimental-339999)](https://github.com/bcgov/repomountie/blob/master/doc/lifecycle-badges.md)
 
 [![R-CMD-check](https://github.com/ninoxconsulting/PEMr/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/ninoxconsulting/PEMr/actions/workflows/R-CMD-check.yaml)
-[![Codecov test
-coverage](https://codecov.io/gh/ninoxconsulting/PEMr/graph/badge.svg)](https://app.codecov.io/gh/ninoxconsulting/PEMr)
 <!-- badges: end -->
 
 ## An R package to support Machine Learning Predictive Ecosystem Mapping (PEM)
