@@ -56,13 +56,13 @@ You can install `PEMr`development version from GitHub, using the
 
 ``` r
 install.packages("remotes")
-remotes::install_github("bcgov/PEMr")
+remotes::install_github("ninoxconsulting/PEMr")
 library(PEMr)
 ```
 
 ### Vignettes
 
-- [PEMprepr](https://github.com/bcgov/PEMprepr/blob/master/vignettes/PEMprepr.Rmd)
+- [PEMprepr](https://github.com/ninoxconsulting/PEMprepr/blob/master/vignettes/PEMprepr.Rmd)
 - How to prepare base data from ML-PEM mapping
 - How to develop a sample plan (road)
 - How to develop a sample plan (helicopter)
@@ -78,7 +78,7 @@ in the work, please contact Genevieve Perkins
 ### Getting Help or Reporting an Issue
 
 To report bugs/issues/feature requests, please file an
-[issue](https://github.com/bcgov/PEMr/issues/).
+[issue](https://github.com/ninoxconsulting/PEMr/issues/).
 
 ### How to Contribute
 

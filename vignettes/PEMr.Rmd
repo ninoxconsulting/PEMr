@@ -20,7 +20,7 @@ Vinettes for each part of the project can be found within each of the packages (
 
 ```{r}
 #| eval: false
-remotes::install_github("bcgov/PEMr", build_vignettes = TRUE)
+remotes::install_github("ninoxconsulting/PEMr", build_vignettes = TRUE)
 
 library(PEMr)
 

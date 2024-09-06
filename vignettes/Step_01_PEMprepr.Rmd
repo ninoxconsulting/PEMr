@@ -29,7 +29,7 @@ knitr::opts_chunk$set(
 # devtools::load_all("D:\\PEM_DATA\\PEMsamplr")
 # devtools::load_all("D:\\PEM_DATA\\PEMprepr")
 
-remotes::install_github("bcgov/PEMr", build_vignettes = FALSE)
+remotes::install_github("ninoxconsulting/PEMr", build_vignettes = FALSE)
 
 library(PEMr)
 
@@ -45,7 +45,7 @@ library(terra)
 `PEMprepr`, short for _Predictive Ecosystem Mapping -- Preparation_ is the first of a
 series of packages supporting the British Columbia Biogeoecosystem Classification's
 Predictive Ecosystem Mapping (PEM) project.  See [BC-BEC](https://www.for.gov.bc.ca/HRE/becweb/index.html)
-and [`PEMr`](https://github.com/bcgov/PEMr) on _GitHub_for details about the BC BEC classification system and, the PEM Project.
+and [`PEMr`](https://github.com/ninoxconsulting/PEMr) on _GitHub_for details about the BC BEC classification system and, the PEM Project.
 
 In the example below it is assumed that you are running the following within a new R project.
 

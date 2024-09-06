@@ -56,7 +56,8 @@ default locations.
 As much as possible it is recommended to not deviate from the structure set
 up here, so that analyses are understandable and reproducible by
 collaborators and from project to project. If there is something missing in
-the default setup, please open an issue at https://github.com/bcgov/PEMr
+the default setup, please open an issue at
+https://github.com/ninoxconsulting/PEMr/issues.
 }
 \examples{
 \dontrun{
