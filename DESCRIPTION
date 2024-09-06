@@ -30,7 +30,7 @@ Suggests:
 VignetteBuilder: 
     knitr
 Remotes:
-    ninoxconsulting/PEMprepr@initial-structure
+    ninoxconsulting/PEMprepr
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.2
