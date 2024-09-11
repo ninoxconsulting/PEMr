@@ -4,14 +4,16 @@ project_name <- "{{ aoi_name }}"
 
 fid <- read_fid()
 
-aoi <- snap_aoi()
+#aoi <- snap_aoi("datecreek_aoi.gpkg")
+# I had some issues with just using the name as not able to detect file in location
+
+aoi <- snap_aoi(aoi = file.path("00_raw_inputs","10_vector","datecreek_aoi.gpkg"),  write_output =FALSE)
+
 
 ## Works up to here
 
 create_base_vectors()
 
-v <- list.files(path = fid$shape_dir_0010[1], pattern = ".gpkg", recursive = TRUE)
-v
 
 copy_clean_vectors()
 
