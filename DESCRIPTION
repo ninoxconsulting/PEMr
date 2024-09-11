@@ -5,7 +5,7 @@ Version: 0.0.0.9000
 Authors@R: c(
     person("Genevieve", "Perkins", , "gperkins@ninoxconsulting.ca", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0003-2663-5904")),
-    person("Will", "McKenzie", , "Will.MacKenzie@gov.bc.ca", role = c("aut","cre")),      
+    person("Will", "McKenzie", , "Will.MacKenzie@gov.bc.ca", role = "aut"),      
     person("Kiri", "Daust", , "kiri.daust@gov.bc.ca", role = "aut"),
     person("Colin", "Chisholm", , "Colin.Chisholm@unbc.ca", role = "aut"),
     person("Matthew", "Coghill", , "matthewcoghill@live.ca", role = "aut"),
