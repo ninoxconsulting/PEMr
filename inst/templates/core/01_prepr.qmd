@@ -8,51 +8,71 @@ editor: visual
 
 This template provides a guide to help guide you through the PEM workflow.
 
-## Running Code
+## Read in library 
 
 When you click the **Render** button a document will be generated that includes both content and the output of embedded code. You can embed code like this:
 
 ```{r,eval=FALSE}
 library(PEMprepr)
-```
-
-You can add options to executable code like this
-
-```{r,eval=FALSE}
 
 project_name <- "{{ aoi_name }}"
 
 fid <- read_fid()
 
-aoi <- snap_aoi()
+```
+
+## Prepare base data
+
+Set up base spatial file to define the area of interest.
+
+If you have previously supplied a spatial file when creating the PEMr project, you will find a copy of your spatial file located within the folder "00_raw_inputs/10_vector/". 
+
+Spatial files are all set to run with BC Albers projection (EPSG:3005). 
+
+
+1. The first step is to prepare aoi by snapping to a common grid (100m). This can be expanded or shrunk for the raw spatial data file provided. 
+
+
+```{r, eval=FALSE}
+
+#aoi <- snap_aoi("datecreek_aoi.gpkg")
+# I had some issues with just using the name as not able to detect file in location
+
+aoi <- snap_aoi(aoi = file.path("00_raw_inputs","10_vector","datecreek_aoi.gpkg"),  write_output =FALSE)
+
+
+```
+
 
 ## Works up to here
 
-create_base_vectors()
+Create the base vector data. This function will create a set of base layers retrieved from bcdata. 
 
-v <- list.files(path = fid$shape_dir_0010[1], pattern = ".gpkg", recursive = TRUE)
-v
+```{r, eval=FALSE}
+create_base_vectors(aoi, out_dir = file.path("00_raw_inputs","10_vector","datecreek_aoi.gpkg"))
+
+```
+
+
+These rasters may need to be reviewed, specifically the roads layer () and ften layers. 
+
+Once reviewed and edited in place we can copy the edited version to a new file location. 
+
+
+```{r, eval=FALSE}
 
 copy_clean_vectors()
 
-# download all vector data layers
 
-create_base_vectors(
-  in_aoi = aoi,
-  out_path = fid$shape_dir_0010[1]
-)
-
-v <- list.files(
-  path = fid$shape_dir_0010[1], pattern = ".gpkg",
-  recursive = TRUE
-)
-v
+```
 
 
 ###############################
 # Prepare Raster Data
 
 # create a blank raster template
+
+```{r, eval = FALSE}
 
 r5 <- create_template(res = 5)
 r25 <- create_template(res = 25)
@@ -77,8 +97,10 @@ get_trim_dem(
   res = 25, filename = "dem_ls.tif"
 )
 
+```
 
 
+```{r}
 layer_options <- c(
   "sinksfilled", "sinkroute", "dem_preproc", "slope_aspect_curve",
   "tcatchment", "tca", "scatchment", "twi", "channelsnetwork",
@@ -114,6 +136,9 @@ l <- list.files(
   path = fid$cov_dir_1020[2], pattern = ".sdat$",
   recursive = TRUE
 )
+
+```
+
 
 
 # generate BEC
