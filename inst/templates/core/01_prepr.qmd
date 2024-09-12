@@ -100,7 +100,7 @@ get_trim_dem(
 ```
 
 
-```{r}
+```{r, eval=FALSE}
 layer_options <- c(
   "sinksfilled", "sinkroute", "dem_preproc", "slope_aspect_curve",
   "tcatchment", "tca", "scatchment", "twi", "channelsnetwork",
