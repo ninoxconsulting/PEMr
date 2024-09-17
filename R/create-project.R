@@ -93,7 +93,7 @@ create_directories <- function(
 }
 
 write_core_files <- function(data) {
-  core_files <- list.files(fs::path_package("PEMr", "templates", "core"), pattern = c("*.qmd|*.R"))
+  core_files <- list.files(fs::path_package("PEMr", "templates", "core"), pattern = "*.R")
   lapply(core_files, function(x) {
     fpath <- fs::path("core", x)
     usethis::use_template(fpath, x, data = data, package = "PEMr")
