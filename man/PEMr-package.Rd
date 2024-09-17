@@ -13,7 +13,11 @@ PEMr is a "meta" package that installs all of the packages in the PEMr family of
 
 Authors:
 \itemize{
-  \item Clair Armour \email{claire.armour@gov.bc.ca}
+  \item Will McKenzie \email{Will.MacKenzie@gov.bc.ca}
+  \item Kiri Daust \email{kiri.daust@gov.bc.ca}
+  \item Colin Chisholm \email{Colin.Chisholm@unbc.ca}
+  \item Matthew Coghill \email{matthewcoghill@live.ca}
+  \item Claire Armour \email{claire.armour@gov.bc.ca}
   \item Andy Teucher \email{andy@andyteucher.ca} (\href{https://orcid.org/0000-0002-7840-692X}{ORCID})
 }
 

@@ -15,7 +15,7 @@
 #' As much as possible it is recommended to not deviate from the structure set
 #' up here, so that analyses are understandable and reproducible by
 #' collaborators and from project to project. If there is something missing in
-#' the default setup, please open an issue at 
+#' the default setup, please open an issue at
 #' https://github.com/ninoxconsulting/PEMr/issues.
 #'
 #' @param aoi_name The name of your area of interest (AOI), will be used to
@@ -93,7 +93,7 @@ create_directories <- function(
 }
 
 write_core_files <- function(data) {
-  core_files <- list.files(fs::path_package("PEMr", "templates", "core"))
+  core_files <- list.files(fs::path_package("PEMr", "templates", "core"), pattern = c("*.qmd|*.R"))
   lapply(core_files, function(x) {
     fpath <- fs::path("core", x)
     usethis::use_template(fpath, x, data = data, package = "PEMr")
