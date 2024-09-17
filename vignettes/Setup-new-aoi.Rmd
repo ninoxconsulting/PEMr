@@ -1,8 +1,8 @@
 ---
-title: "PEMr"
+title: "Setup-new-aoi"
 output: rmarkdown::html_vignette
 vignette: >
-  #%\VignetteIndexEntry{PEMr}
+  %\VignetteIndexEntry{Setup-new-aoi}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -13,6 +13,11 @@ knitr::opts_chunk$set(
   comment = "#>"
 )
 ```
+
+```{r setup}
+library(PEMr)
+```
+
 
 ## Setting up a new PEM project 
 
@@ -50,7 +55,4 @@ create_pemr_project(
 Once this has run a new Rstudio window will pop up containing the new project, along with the file structure and template scripts. 
 
 The template scripts are labeled in order. For example 01_prepr.qmd through to XXX. 
-
-
-
 
