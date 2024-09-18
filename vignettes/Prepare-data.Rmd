@@ -1,8 +1,8 @@
 ---
-title: "prepare_data"
+title: "Prepare-data"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{prepare_data}
+  %\VignetteIndexEntry{Prepare-data}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -14,7 +14,7 @@ knitr::opts_chunk$set(
 )
 ```
 
-```{r setup}
+```{r setup, include = FALSE}
 library(PEMr)
 library(PEMprepr)
 
@@ -27,17 +27,15 @@ fid <- read_fid()
 
 # create templates 
 
-```{r}
+```{r, include = FALSE}
 
-aoidir <- 
-
-aoi <- snap_aoi()
+snap_aoi()
 
 # 5m resolution 
-raoi <- create_template_raster()
+create_template_raster()
 
 #25 resolution
-raoi_ls <- create_template_raster()
+create_template_raster()
 
 
 ```
@@ -45,7 +43,7 @@ raoi_ls <- create_template_raster()
 
 # generate base vector layers 
 
-```{r}
+```{r, include = FALSE}
 create_base_vectors()
 
 ```
@@ -53,7 +51,7 @@ create_base_vectors()
 
 # generate base DEM layer 
 
-```{r}
+```{r, include = FALSE}
 
 #1) option to use trim data 
 
