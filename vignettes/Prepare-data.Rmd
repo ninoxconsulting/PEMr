@@ -16,4 +16,50 @@ knitr::opts_chunk$set(
 
 ```{r setup}
 library(PEMr)
+library(PEMprepr)
+
+#project_name <- "{{ aoi_name }}"
+#project_name <- "datecreek_aoi"
+
+fid <- read_fid()
+
 ```
+
+# create templates 
+
+```{r}
+
+aoidir <- 
+
+aoi <- snap_aoi()
+
+# 5m resolution 
+raoi <- create_template_raster()
+
+#25 resolution
+raoi_ls <- create_template_raster()
+
+
+```
+
+
+# generate base vector layers 
+
+```{r}
+create_base_vectors()
+
+```
+
+
+# generate base DEM layer 
+
+```{r}
+
+#1) option to use trim data 
+
+
+#2) option to use lidr 
+
+
+```
+

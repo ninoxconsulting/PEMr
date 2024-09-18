@@ -9,34 +9,30 @@ project_name <- "{{ aoi_name }}"
 
 fid <- read_fid()
 
+# create base layers
+
 aoi <- snap_aoi()
 
+create_template_raster()
 
-# create base layers
+
+
+# download all vector data layers
+
 
 create_base_vectors()
 
-copy_clean_vectors()
 
-# # download all vector data layers
-#
-# create_base_vectors(
-#   in_aoi = aoi,
-#   out_path = fid$shape_dir_0010[1]
-# )
-#
-# v <- list.files(
-#   path = fid$shape_dir_0010[1], pattern = ".gpkg",
-#   recursive = TRUE
-# )
-# v
-#
-#
+# create a dem layer - from trim
+
+
+
+
+#copy_clean_vectors() # no longer needed
+
+
 # ###############################
-# # Prepare Raster Data
-#
-# # create a blank raster template
-#
+
 # r5 <- create_template(res = 5)
 # r25 <- create_template(res = 25)
 # aoi_bb <- file.path(fid$shape_dir_1010[2], "aoi_ls_snap.gpkg")
