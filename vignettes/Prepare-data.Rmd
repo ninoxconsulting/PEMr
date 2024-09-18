@@ -14,7 +14,7 @@ knitr::opts_chunk$set(
 )
 ```
 
-```{r setup, include = FALSE}
+```{r setup, eval = FALSE}
 library(PEMr)
 library(PEMprepr)
 
@@ -27,14 +27,10 @@ fid <- read_fid()
 
 # create templates 
 
-```{r, include = FALSE}
+```{r, eval = FALSE}
 
 snap_aoi()
 
-# 5m resolution 
-create_template_raster()
-
-#25 resolution
 create_template_raster()
 
 
@@ -43,7 +39,7 @@ create_template_raster()
 
 # generate base vector layers 
 
-```{r, include = FALSE}
+```{r, eval = FALSE}
 create_base_vectors()
 
 ```
@@ -51,7 +47,7 @@ create_base_vectors()
 
 # generate base DEM layer 
 
-```{r, include = FALSE}
+```{r, eval = FALSE}
 
 #1) option to use trim data 
 
