@@ -9,6 +9,7 @@ vignette: >
 
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
+  eval = FALSE,
   collapse = TRUE,
   comment = "#>"
 )
@@ -60,18 +61,12 @@ get_cded_dem()
 
 # generate raster covariates for modelling (5m)
 
-```{r}
-
-```
-
-
-
 
 # generate inputs for sample plan (25m resolution)
 
 # generate base template raster 
 
-```{r}
+```{r, eval = FALSE}
 
 create_raster_template(res = 25)
 
