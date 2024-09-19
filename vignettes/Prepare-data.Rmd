@@ -80,7 +80,7 @@ create_raster_template(res = 25)
 # generate dem at 25m res
 
 ```{r}
-get_cded_dem()
+get_cded_dem(res = 25)
 ```
 
 
