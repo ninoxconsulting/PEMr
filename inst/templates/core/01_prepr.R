@@ -16,48 +16,34 @@ aoi <- snap_aoi()
 create_template_raster()
 
 
-
 # download all vector data layers
-
 
 create_base_vectors()
 
 
-# create a dem layer - from trim
+# create a dem layer
+# 1) from trim
+
+get_cded_dem()
+
+# 2) from lidar
+
+#get_lidar_dem() # placeholder
+
+
+
+# generate the model covariates
 
 
 
 
-#copy_clean_vectors() # no longer needed
 
 
-# ###############################
 
-# r5 <- create_template(res = 5)
-# r25 <- create_template(res = 25)
-# aoi_bb <- file.path(fid$shape_dir_1010[2], "aoi_ls_snap.gpkg")
-# r25_ls <- create_template(aoi_bb = aoi_bb, res = 25, filename = "template_ls.tif")
-#
-#
-# # read in base DEM and align the dEM
-# dem <- terra::rast(file.path(fid$cov_dir_1020[2], paste0(res_scale, "m"), "dem.tif"))
-#
-# ## OR alternatively read in TRIM raster
-#
-# get_trim_dem(
-#   aoi_bb = file.path(fid$shape_dir_1010[2], "aoi_snapped.gpkg"),
-#   res = 25, out_dir = fid$cov_dir_1020[2]
-# )
-#
-# get_trim_dem(res = 5)
-#
-# get_trim_dem(
-#   aoi_bb = file.path(fid$shape_dir_1010[2], "aoi_ls_snap.gpkg"),
-#   res = 25, filename = "dem_ls.tif"
-# )
-#
-#
-#
+# generate the sample plan (25m covariates)
+
+
+
 # layer_options <- c(
 #   "sinksfilled", "sinkroute", "dem_preproc", "slope_aspect_curve",
 #   "tcatchment", "tca", "scatchment", "twi", "channelsnetwork",

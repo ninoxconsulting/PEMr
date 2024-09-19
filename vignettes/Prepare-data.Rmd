@@ -37,7 +37,7 @@ create_template_raster()
 ```
 
 
-# generate base vector layers 
+# generate base vector layers
 
 ```{r, eval = FALSE}
 create_base_vectors()
@@ -45,15 +45,42 @@ create_base_vectors()
 ```
 
 
-# generate base DEM layer 
+# generate base DEM layer for modelling (5m)
 
 ```{r, eval = FALSE}
 
 #1) option to use trim data 
 
+get_cded_dem()
 
 #2) option to use lidr 
 
 
 ```
+
+# generate raster covariates for modelling (5m)
+
+```{r}
+
+```
+
+
+
+
+# generate inputs for sample plan (25m resolution)
+
+# generate base template raster 
+
+```{r}
+
+create_raster_template(res = 25)
+
+```
+
+# generate dem at 25m res
+
+```{r}
+get_cded_dem()
+```
+
 
