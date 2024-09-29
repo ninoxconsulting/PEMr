@@ -14,7 +14,7 @@ test_that("create_project() creates a project", {
 
   # Fills in project name in template
   expect_equal(
-    readLines(fs::path(dir, "test_aoi", "01_prepr.R"))[3],
+    readLines(fs::path(dir, "test_aoi", "01_prepr.R"))[7],
     "project_name <- \"test_aoi\""
   )
 })
