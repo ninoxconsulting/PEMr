@@ -13,16 +13,21 @@ fid <- read_fid()
 
 aoi <- snap_aoi()
 
-create_template_raster()
-
 
 # download all vector data layers
 
 create_base_vectors()
 
 
+
+
+# download all raster data for modelling
+
+create_template_raster()
+
+
 # create a dem layer
-# 1) from trim
+# 1) from cded
 
 get_cded_dem()
 
@@ -36,8 +41,7 @@ get_cded_dem()
 
 
 
-
-
+create_covariates()
 
 
 # generate the sample plan (25m covariates)
@@ -80,13 +84,12 @@ get_cded_dem()
 #   recursive = TRUE
 # )
 #
-#
-# # generate BEC
-#
-# bec_sf <- sf::st_read(file.path(fid$shape_dir_1010[1], "bec.gpkg")) %>%
-#   sf::st_cast(., "MULTIPOLYGON")
-#
-# bec_rast <- create_bgc_template(bec_sf,
-#   field = "MAP_LABEL", template = r25,
-#   outpath = fid$cov_dir_1020[2]
-# )
+
+
+# Generate BEC template
+
+create_bgc_template()
+
+
+# congratulations you are now ready to start developing the sample plan
+
