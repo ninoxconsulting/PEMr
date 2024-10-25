@@ -19,8 +19,6 @@ aoi <- snap_aoi()
 create_base_vectors()
 
 
-
-
 # download all raster data for modelling
 
 create_template_raster()
