@@ -1,0 +1,192 @@
+---
+title: "01_Setup-new-aoi"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Setup-new-aoi}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+
+## Setting up a new PEM project 
+
+The PEMr package is designed to help users access the functions and follow a workflow to create a Predictive Ecosystem Map project. 
+
+These packages are currently in development and there maybe breaking changes. 
+
+The first step needed is to generate a new PEM project. This will include a new R-studio project, a template folder structure, and a series of template workflow quarto documents. 
+
+
+```{r}
+#| eval: false
+remotes::install_github("ninoxconsulting/PEMr", build_vignettes = TRUE)
+remotes::install_github("ninoxconsulting/PEMprepr", build_vignettes = TRUE)
+
+library(PEMr)
+library(PEMprepr)
+
+```
+
+The first step is to decide the name of your area of interest (AOI) and if you have a spatial file for the given area. This is not required at this stage but if a convenient feature. 
+
+
+```{r}
+#| eval: false
+#| 
+create_pemr_project(
+  path = "C:\\r_repo\\2024_pemr\\testing_pemr",
+  aoi = "datecreek_aoi",
+  aoi_file = "C:\\r_repo\\2024_pemr\\datecreek_aoi.gpkg"
+)
+
+
+```
+
+
+
+# Generating base data for modelling 
+
+```{r setup, eval = FALSE}
+library(PEMr)
+library(PEMprepr)
+
+#project_name <- "{{ aoi_name }}"
+#project_name <- "datecreek_aoi"
+
+fid <- read_fid()
+
+```
+
+
+
+# create templates 
+
+```{r, eval = FALSE}
+
+snap_aoi()
+
+create_template_raster()
+
+
+```
+
+
+# generate base vector layers
+
+```{r, eval = FALSE}
+
+create_base_vectors()
+
+```
+
+
+# generate base DEM layer for modelling (5m)
+
+```{r, eval = FALSE}
+
+#1) option to use trim data 
+
+get_cded_dem()
+
+#2) option to use lidr 
+
+
+```
+
+# generate raster covariates for modelling (5m)
+
+
+```{r}
+
+create_covariates()
+
+```
+
+
+# convert bec layer into raster
+
+
+Create a bec raster to match the template sizes 
+
+```{r}
+# 
+# bec_sf <- sf::st_read(file.path(fid$shape_dir_1010[1], "bec.gpkg")) %>%
+#   sf::st_cast(., "MULTIPOLYGON") 
+# 
+# bec_code <- bec_sf %>% st_drop_geometry()  %>% dplyr::select(MAP_LABEL) %>%
+#     unique() 
+# 
+# bec_code <- bec_code %>% 
+#     mutate(bgc_unique_code = seq(1, length(bec_code$MAP_LABEL),1))
+# 
+# bec_sf <- dplyr::left_join(bec_sf, bec_code)
+# 
+# 
+# bec_vec <- terra::vect(bec_sf)
+# 
+# # generate a 25m raster
+# 
+# bec_ras25 <- terra::rasterize(bec_vec, r25, field = "MAP_LABEL")
+# 
+# terra::writeRaster(bec_ras25, file.path(fid$cov_dir_1020[2], "25m", "bec.tif"), overwrite = TRUE)
+# 
+# 
+# # generate a 5m raster 
+# 
+# bec_ras5 <- terra::rasterize(bec_vec, r5, field = "MAP_LABEL")
+# 
+# terra::writeRaster(bec_ras5, file.path(fid$cov_dir_1020[2], "5m", "bec.tif"), overwrite = TRUE)
+
+```
+
+
+
+
+
+
+
+
+# generate inputs at landscape level (25m resolution)
+
+# generate base landscape template raster 
+
+```{r, eval = FALSE}
+
+create_raster_template(res = 25)
+
+```
+
+# generate dem at 25m res
+
+```{r}
+get_cded_dem(res = 25)
+```
+
+# landscape polygon 
+
+```{r}
+
+create_covariates()
+
+```
+
+
+
+
+# Create the suplementary data. 
+## Create fuzzy matrix 
+
+```{r}
+
+#create_fuzzy_matrix()
+
+```
+
+
