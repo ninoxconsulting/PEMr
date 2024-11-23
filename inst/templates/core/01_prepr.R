@@ -1,4 +1,5 @@
-# Template script to prepare data for Predictive Ecological Mapping
+# Template script to prepare data for Predictive Ecological Mapping.
+# this is the first script in a series of workflow
 
 # project set up
 
