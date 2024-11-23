@@ -1,5 +1,5 @@
 ---
-title: "01_Setup-new-aoi"
+title: "Setup-new-aoi"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{Setup-new-aoi}
@@ -70,10 +70,26 @@ fid <- read_fid()
 
 ```{r, eval = FALSE}
 
-snap_aoi()
+aoi_dir = read_fid()$dir_0010_vector$path_abs
+files <- list.files(aoi_dir, pattern = "([.]gpkg)|([.]shp)$")
+aoi_file = fs::path(aoi_dir, files )
 
-create_template_raster()
 
+# vector
+aoi <- snap_aoi(aoi_file, method = "expand")
+
+aoi <- fs::path(PEMprepr::read_fid()$dir_1010_vector$path_abs, "aoi_snapped.gpkg")
+
+# raster
+
+# Prepare Raster Data (for landscape)
+
+r25 <- create_template_raster(aoi, res = 25)
+
+
+# Prepare Raster Data(for 5m lidar template)
+
+r5 <- create_template_raster(aoi, res = 5)
 
 ```
 
@@ -82,7 +98,7 @@ create_template_raster()
 
 ```{r, eval = FALSE}
 
-create_base_vectors()
+create_base_vectors(aoi, out_dir = PEMprepr::read_fid()$dir_1010_vector$path_abs)
 
 ```
 
@@ -93,7 +109,13 @@ create_base_vectors()
 
 #1) option to use trim data 
 
-get_cded_dem()
+dem25 = get_cded_dem(aoi = fs::path(PEMprepr::read_fid()$dir_1020_covariates$path_abs, "25m", "template.tif"),
+                   res = 25,
+                   overwrite = TRUE)
+
+dem = get_cded_dem(aoi = fs::path(PEMprepr::read_fid()$dir_1020_covariates$path_abs, "25m", "template.tif"),
+                   res = 5,
+                   overwrite = TRUE)
 
 #2) option to use lidr 
 
@@ -105,88 +127,51 @@ get_cded_dem()
 
 ```{r}
 
-create_covariates()
+# get model covariates
+# # need to update this once Prepr is merged. 
+
+#find_saga_path()
+
+#check_saga()
+
+# note this is based on 25m resolution
+
+#create_covariates(
+#    dtm = fs::path(PEMprepr::read_fid()$dir_1020_covariates$path_rel,"25m","dem.tif"),
+#    saga_path = "C:/Programs/saga-9.2.0_x64/saga-9.2.0_x64/saga_cmd.exe",
+#    out_dir = PEMprepr::read_fid()$dir_1020_covariates$path_rel,
+#    layers = "all"
+# )
+
 
 ```
-
-
-# convert bec layer into raster
 
 
 Create a bec raster to match the template sizes 
 
 ```{r}
+
+ # generate a 25m raster
 # 
-# bec_sf <- sf::st_read(file.path(fid$shape_dir_1010[1], "bec.gpkg")) %>%
-#   sf::st_cast(., "MULTIPOLYGON") 
-# 
-# bec_code <- bec_sf %>% st_drop_geometry()  %>% dplyr::select(MAP_LABEL) %>%
-#     unique() 
-# 
-# bec_code <- bec_code %>% 
-#     mutate(bgc_unique_code = seq(1, length(bec_code$MAP_LABEL),1))
-# 
-# bec_sf <- dplyr::left_join(bec_sf, bec_code)
+# bec_rast25 <- create_bgc_template(
+#   field = "MAP_LABEL",
+#   template =  r25,
+#   write_output = FALSE
+# )
 # 
 # 
-# bec_vec <- terra::vect(bec_sf)
+# # generate a 5m raster
 # 
-# # generate a 25m raster
-# 
-# bec_ras25 <- terra::rasterize(bec_vec, r25, field = "MAP_LABEL")
-# 
-# terra::writeRaster(bec_ras25, file.path(fid$cov_dir_1020[2], "25m", "bec.tif"), overwrite = TRUE)
-# 
-# 
-# # generate a 5m raster 
-# 
-# bec_ras5 <- terra::rasterize(bec_vec, r5, field = "MAP_LABEL")
-# 
-# terra::writeRaster(bec_ras5, file.path(fid$cov_dir_1020[2], "5m", "bec.tif"), overwrite = TRUE)
+# bec_rast5 <- create_bgc_template(
+#   field = "MAP_LABEL",
+#   template =  r5,
+#   write_output = FALSE
+# )
+
+
+#####################
 
 ```
 
-
-
-
-
-
-
-
-# generate inputs at landscape level (25m resolution)
-
-# generate base landscape template raster 
-
-```{r, eval = FALSE}
-
-create_raster_template(res = 25)
-
-```
-
-# generate dem at 25m res
-
-```{r}
-get_cded_dem(res = 25)
-```
-
-# landscape polygon 
-
-```{r}
-
-create_covariates()
-
-```
-
-
-
-
-# Create the suplementary data. 
-## Create fuzzy matrix 
-
-```{r}
-
-#create_fuzzy_matrix()
-
-```
 
 
