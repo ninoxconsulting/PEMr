@@ -23,13 +23,13 @@ Imports:
     cli,
     fs,
     usethis,
-    rstudioapi,
-    rlang,
     withr,
     PEMprepr
 Suggests: 
     knitr,
     rmarkdown,
+    rstudioapi,
+    rlang,
     testthat (>= 3.0.0)
 VignetteBuilder: 
     knitr
