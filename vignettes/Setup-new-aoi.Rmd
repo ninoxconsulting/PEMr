@@ -82,11 +82,6 @@ aoi <- fs::path(PEMprepr::read_fid()$dir_1010_vector$path_abs, "aoi_snapped.gpkg
 
 # raster
 
-# Prepare Raster Data (for landscape)
-
-r25 <- create_template_raster(aoi, res = 25)
-
-
 # Prepare Raster Data(for 5m lidar template)
 
 r5 <- create_template_raster(aoi, res = 5)
@@ -109,10 +104,6 @@ create_base_vectors(aoi, out_dir = PEMprepr::read_fid()$dir_1010_vector$path_abs
 
 #1) option to use trim data 
 
-dem25 = get_cded_dem(aoi = fs::path(PEMprepr::read_fid()$dir_1020_covariates$path_abs, "25m", "template.tif"),
-                   res = 25,
-                   overwrite = TRUE)
-
 dem = get_cded_dem(aoi = fs::path(PEMprepr::read_fid()$dir_1020_covariates$path_abs, "25m", "template.tif"),
                    res = 5,
                    overwrite = TRUE)
@@ -125,23 +116,21 @@ dem = get_cded_dem(aoi = fs::path(PEMprepr::read_fid()$dir_1020_covariates$path_
 # generate raster covariates for modelling (5m)
 
 
-```{r}
+```{r, eval = FALSE}
 
-# get model covariates
-# # need to update this once Prepr is merged. 
+# get model covariates 
 
-#find_saga_path()
+find_saga_path()
 
-#check_saga()
+saga_cmd()
 
-# note this is based on 25m resolution
 
-#create_covariates(
-#    dtm = fs::path(PEMprepr::read_fid()$dir_1020_covariates$path_rel,"25m","dem.tif"),
-#    saga_path = "C:/Programs/saga-9.2.0_x64/saga-9.2.0_x64/saga_cmd.exe",
-#    out_dir = PEMprepr::read_fid()$dir_1020_covariates$path_rel,
-#    layers = "all"
-# )
+create_covariates(
+   dtm = fs::path(PEMprepr::read_fid()$dir_1020_covariates$path_rel,"5m","dem.tif"),
+   saga_path = saga_cmd()
+   out_dir = PEMprepr::read_fid()$dir_1020_covariates$path_rel,
+   layers = "all"
+)
 
 
 ```
@@ -149,29 +138,17 @@ dem = get_cded_dem(aoi = fs::path(PEMprepr::read_fid()$dir_1020_covariates$path_
 
 Create a bec raster to match the template sizes 
 
-```{r}
+```{r, eval = FALSE}
+# generate a 5m raster
+bec_rast5 <- create_bgc_template(
+  field = "MAP_LABEL",
+  template =  r5,
+  write_output = FALSE
+)
 
- # generate a 25m raster
-# 
-# bec_rast25 <- create_bgc_template(
-#   field = "MAP_LABEL",
-#   template =  r25,
-#   write_output = FALSE
-# )
-# 
-# 
-# # generate a 5m raster
-# 
-# bec_rast5 <- create_bgc_template(
-#   field = "MAP_LABEL",
-#   template =  r5,
-#   write_output = FALSE
-# )
-
-
-#####################
 
 ```
 
 
+congratulations you are now ready to start developing the sample plan
 
