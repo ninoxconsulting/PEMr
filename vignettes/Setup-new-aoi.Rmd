@@ -15,7 +15,7 @@ knitr::opts_chunk$set(
 ```
 
 
-## Setting up a new PEM project 
+## 1. Setting up a new PEM project 
 
 The PEMr package is designed to help users access the functions and follow a workflow to create a Predictive Ecosystem Map project. 
 
@@ -51,7 +51,7 @@ create_pemr_project(
 
 
 
-# Generating base data for modelling 
+## 2. Generating base data for modelling (5m resolution as default) 
 
 ```{r setup, eval = FALSE}
 library(PEMr)
@@ -65,8 +65,7 @@ fid <- read_fid()
 ```
 
 
-
-# create templates 
+### create model templates 
 
 ```{r, eval = FALSE}
 
@@ -82,11 +81,6 @@ aoi <- fs::path(PEMprepr::read_fid()$dir_1010_vector$path_abs, "aoi_snapped.gpkg
 
 # raster
 
-# Prepare Raster Data (for landscape)
-
-r25 <- create_template_raster(aoi, res = 25)
-
-
 # Prepare Raster Data(for 5m lidar template)
 
 r5 <- create_template_raster(aoi, res = 5)
@@ -94,7 +88,7 @@ r5 <- create_template_raster(aoi, res = 5)
 ```
 
 
-# generate base vector layers
+### generate base vector layers
 
 ```{r, eval = FALSE}
 
@@ -103,15 +97,11 @@ create_base_vectors(aoi, out_dir = PEMprepr::read_fid()$dir_1010_vector$path_abs
 ```
 
 
-# generate base DEM layer for modelling (5m)
+### generate base DEM layer for modelling (5m)
 
 ```{r, eval = FALSE}
 
 #1) option to use trim data 
-
-dem25 = get_cded_dem(aoi = fs::path(PEMprepr::read_fid()$dir_1020_covariates$path_abs, "25m", "template.tif"),
-                   res = 25,
-                   overwrite = TRUE)
 
 dem = get_cded_dem(aoi = fs::path(PEMprepr::read_fid()$dir_1020_covariates$path_abs, "25m", "template.tif"),
                    res = 5,
@@ -122,56 +112,177 @@ dem = get_cded_dem(aoi = fs::path(PEMprepr::read_fid()$dir_1020_covariates$path_
 
 ```
 
-# generate raster covariates for modelling (5m)
+### generate raster covariates for modelling (5m)
 
 
-```{r}
+```{r, eval = FALSE}
 
-# get model covariates
-# # need to update this once Prepr is merged. 
+# get model covariates 
 
-#find_saga_path()
+find_saga_path()
 
-#check_saga()
+saga_cmd()
 
-# note this is based on 25m resolution
 
-#create_covariates(
-#    dtm = fs::path(PEMprepr::read_fid()$dir_1020_covariates$path_rel,"25m","dem.tif"),
-#    saga_path = "C:/Programs/saga-9.2.0_x64/saga-9.2.0_x64/saga_cmd.exe",
-#    out_dir = PEMprepr::read_fid()$dir_1020_covariates$path_rel,
-#    layers = "all"
-# )
+create_covariates(
+   dtm = fs::path(PEMprepr::read_fid()$dir_1020_covariates$path_rel,"5m","dem.tif"),
+   saga_path = saga_cmd()
+   out_dir = PEMprepr::read_fid()$dir_1020_covariates$path_rel,
+   layers = "all"
+)
 
 
 ```
 
 
-Create a bec raster to match the template sizes 
+### Create a bec raster to match the template sizes 
 
-```{r}
+```{r, eval = FALSE}
+# generate a 5m raster
+bec_rast5 <- create_bgc_template(
+  field = "MAP_LABEL",
+  template =  r5,
+  write_output = FALSE
+)
 
- # generate a 25m raster
-# 
-# bec_rast25 <- create_bgc_template(
-#   field = "MAP_LABEL",
-#   template =  r25,
-#   write_output = FALSE
-# )
-# 
-# 
-# # generate a 5m raster
-# 
-# bec_rast5 <- create_bgc_template(
-#   field = "MAP_LABEL",
-#   template =  r5,
-#   write_output = FALSE
-# )
-
-
-#####################
 
 ```
+
+
+congratulations you are now ready to start developing the sample plan
+
+
+
+## 3. Generating landscape data for sample plan developemtn (25m resolution as default) 
+
+
+## this is a placeholder for the workflow of samplr (still in developement)
+
+```{r, eval = FALSE}
+
+# vector (aoi, roads and start points)
+
+in_dir = PEMprepr::read_fid()$dir_1010_vector$path_abs
+aoi_file = fs::path(in_dir, "aoi_snapped.gpkg" )
+
+out_dir <- PEMprepr::read_fid()$dir_201010_inputs$path_abs
+
+
+aoils <- snap_aoi(aoi_file, method = "expand", buffer = 1000, write_output = FALSE)
+
+sf::st_write(aoils, fs::path(out_dir, "aoi_snapped_ls.gpkg"), append = FALSE)
+
+
+
+# Prepare Raster Data (for landscape)
+
+r25 <- create_template_raster(aoils,
+                              res = 25,
+                              out_dir = PEMprepr::read_fid()$dir_201010_inputs$path_abs,
+                              write_output = TRUE)
+
+
+dem25 = get_cded_dem(aoi = r25,
+                     res = 25,
+                     out_dir = PEMprepr::read_fid()$dir_201010_inputs$path_abs,
+                     write_output = TRUE)
+
+
+
+# generate a 25m raster
+
+bec_rast25 <- create_bgc_template(
+  field = "MAP_LABEL",
+  template=  r25,
+  out_dir = PEMprepr::read_fid()$dir_201010_inputs$path_abs,
+  write_output = TRUE
+)
+
+
+
+# Generate landscape covariates
+
+create_landscape_covariates(
+  dtm = dem25,
+  saga_path = "C:/Programs/saga-9.2.0_x64/saga-9.2.0_x64/saga_cmd.exe",
+  layers = c("mrvbf", "dah", "landform"),
+  out_dir = PEMprepr::read_fid()$dir_201010_inputs$path_abs,
+  sieve_size = 10,
+  dah_threshold = 0.2,
+  saga_param = list(
+    T_SLOPE = 64, TPCTL_V = 6, T_PCTL_R = 2,
+    P_SLOPE = 4.0, P_PCTL = 3.0, UPDATE = 1,
+    CLASSIFY = 1, MAX_RES = 100
+  ))
+
+
+
+# create binned landscape
+landscapes <- create_binned_landscape(
+  in_dir = fs::path(PEMprepr::read_fid()$dir_201010_inputs$path_abs,"25m","modules_landscape"),
+  layers = c("dah_LS", "landform_LS","mrvbf_LS"),
+  write_output = TRUE)
+
+terra::plot(landscapes)
+
+
+# check landscape class with Bec
+routdf <- check_bgc_landscapes(bec_rast25, landscapes)
+
+ggplot2::ggplot(routdf, ggplot2::aes(landscape)) +
+  ggplot2::geom_histogram() +
+  ggplot2::facet_wrap(~MAP_LABEL)
+
+
+# download roads layer and run through standard checks
+
+out_dir <- PEMprepr::read_fid()$dir_201010_inputs$path_abs
+
+roadsls <- get_roads(aoils, out_dir)
+
+check_roads(roadsls)
+
+
+
+
+# Get start points and run checks
+
+cities <- sf::st_read(fs::path(PEMprepr::read_fid()$dir_1010_vector$path_rel,"major_towns_bc.gpkg"))
+
+# not in study area
+nearest_town = "Hazelton"
+start1 <- cities[cities$NAME == nearest_town,"NAME"]
+
+check_locations( roads = roadsls, locations = start1)
+
+# in study area
+nearest_town = "TEST_location"
+start <- cities[cities$NAME == nearest_town,"NAME"]
+check_locations( roads = roadsls, locations = start)
+
+# one in and one out of study area
+start2 <- rbind(start, start1)
+check_locations( roads = roadsls, locations = start2)
+
+
+
+sf::st_write(start2, fs::path(out_dir, "start_ls.gpkg"), append = FALSE)
+
+
+## Generate the cost layer - need to review these two scripts and 
+
+
+## Currently there are two options
+## old version
+#03_sample_plan_new_version.R
+
+## new version
+#03_sample_plan_new_version.R
+#fn_prep_cost_layer_utils.R
+
+```
+
+
 
 
 
