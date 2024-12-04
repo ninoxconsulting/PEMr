@@ -109,7 +109,6 @@ dem = get_cded_dem(aoi = fs::path(PEMprepr::read_fid()$dir_1020_covariates$path_
 
 #2) option to use lidr 
 
-
 ```
 
 ### generate raster covariates for modelling (5m)
@@ -204,7 +203,7 @@ bec_rast25 <- create_bgc_template(
 
 create_landscape_covariates(
   dtm = dem25,
-  saga_path = "C:/Programs/saga-9.2.0_x64/saga-9.2.0_x64/saga_cmd.exe",
+  saga_path = saga_cmd(),
   layers = c("mrvbf", "dah", "landform"),
   out_dir = PEMprepr::read_fid()$dir_201010_inputs$path_abs,
   sieve_size = 10,
@@ -245,32 +244,33 @@ check_roads(roadsls)
 
 
 
+
+
 # Get start points and run checks
 
 cities <- sf::st_read(fs::path(PEMprepr::read_fid()$dir_1010_vector$path_rel,"major_towns_bc.gpkg"))
 
-# not in study area
-nearest_town = "Hazelton"
-start1 <- cities[cities$NAME == nearest_town,"NAME"]
+loc <- data.frame(NAME = "TEST_location",
+                  X = 889571,
+                  Y = 1157078)
 
-check_locations( roads = roadsls, locations = start1)
+loc <- st_as_sf(loc,
+                coords = c("X", "Y"),
+                crs = 3005)
+
+sf::st_geometry(loc)<- "geom"
+cities <- dplyr::bind_rows(cities, loc)
 
 # in study area
 nearest_town = "TEST_location"
 start <- cities[cities$NAME == nearest_town,"NAME"]
+
 check_locations( roads = roadsls, locations = start)
 
-# one in and one out of study area
-start2 <- rbind(start, start1)
-check_locations( roads = roadsls, locations = start2)
-
-
-
-sf::st_write(start2, fs::path(out_dir, "start_ls.gpkg"), append = FALSE)
+sf::st_write(start, fs::path(out_dir, "start.gpkg"), append = FALSE)
 
 
 ## Generate the cost layer - need to review these two scripts and 
-
 
 ## Currently there are two options
 ## old version
@@ -285,4 +285,113 @@ sf::st_write(start2, fs::path(out_dir, "start_ls.gpkg"), append = FALSE)
 
 
 
+```{r eval = FALSE}
+
+sampleplan_dir <- PEMprepr::read_fid()$dir_201010_inputs$path_abs
+acost <- terra::rast(fs::path(sampleplan_dir, "acost.tif" ))
+
+
+
+bec = terra::rast(fs::path(PEMprepr::read_fid()$dir_201010_inputs$path_abs, "25m", "bec.tif"))
+binned_landscape = terra::rast(fs::path(PEMprepr::read_fid()$dir_201010_inputs$path_abs, "25m", "modules", "landscape_binned.tif"))
+acost <- terra::rast(fs::path(sampleplan_dir, "acost.tif" ))
+
+
+ck <- check_bgc_cost( bec, binned_landscape, acost)
+
+
+ggplot2::ggplot(ck, ggplot2::aes(landscape, fill = cost_code)) +
+  ggplot2::geom_histogram(bins = 30) +
+  ggplot2::facet_wrap(~MAP_LABEL)
+
+
+
+
+# generate cost penalty
+
+sampleplan_dir <- PEMprepr::read_fid()$dir_201010_inputs$path_abs
+
+acost <- terra::rast(fs::path(sampleplan_dir, "acost.tif" ))
+
+vec_dir = fs::path(PEMprepr::read_fid()$dir_1010_vector$path_abs)
+dem = terra::rast(fs::path(PEMprepr::read_fid()$dir_201010_inputs$path_abs, "25m", "dem.tif"))
+cost =  acost
+costval = 3000
+vri_cost = 2500
+calc_by_qq = TRUE
+
+
+cost_penalty <- create_cost_penalty(vec_dir = vec_dir,
+                                    cost = acost,
+                                    dem = dem,
+                                    costval = 3000,
+                                    vri_cost = 2500,
+                                    calc_by_qq = TRUE,
+                                    write_output = FALSE)
+
+
+#terra::varnames(cost_penalty) <- "cost"
+
+terra::plot(cost_penalty)
+
+# create no sample areas
+cost_masked <- create_cost_exclusion(vec_dir = vec_dir,
+                                     cost = cost_penalty,
+                                     buffer = 150,
+                                     write_output = FALSE)
+
+
+
+terra::writeRaster(cost_masked,
+                   fs::path(PEMprepr::read_fid()$dir_201010_inputs$path_abs,
+                            "cost_final.tif"), overwrite = TRUE)
+
+
+# generate a BGC cost mask per BGC in map area
+
+out_dir <- fs::path(PEMprepr::read_fid()$dir_2010_standard$path_abs, "20_masks")
+cost_masked<- terra::rast(fs::path(sampleplan_dir, "cost_final.tif" ))
+vec_dir = fs::path(PEMprepr::read_fid()$dir_1010_vector$path_abs)
+
+
+create_bgc_mask(vec_dir, cost_masked, out_dir = exclusion_path)
+
+
+
+
+# Move files to the same folder
+
+
+root_path <- fs::path(PEMprepr::read_fid()$dir_201010_inputs$path_abs)
+
+move_files <- function(root_path){
+
+  ftm <- fs::dir_ls(root_path,recurse = T, regexp = ".tif$")
+
+  for (i in ftm){
+    # i = ftm[1]
+
+    finame <- basename(i)
+    froot <-  basename(fs::dir_ls(root_path, recurse = F, regexp = ".tif$"))
+
+    if(finame %in% froot) {
+      cli::cli_alert_success(
+        " {.val finame}. skipped "
+      )
+    } else {
+
+      fnew <- fs::path(root_path, finame)
+      fmove <- fs::file_move(i, fnew)
+      cli::cli_alert_success(
+        " {.val i}. moved to  "
+      )
+    }
+  }
+
+}
+
+move_files(root_path)
+
+
+```
 
