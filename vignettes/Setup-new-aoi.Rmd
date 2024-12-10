@@ -417,7 +417,7 @@ move_files(root_path)
 
 # Generate a sample plan
 
-```{r}
+```{r eval = FALSE}
 
 #remotes::install_github("ninoxconsulting/PEMprepr")
 library(PEMprepr)
