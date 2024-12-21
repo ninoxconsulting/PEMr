@@ -77,7 +77,6 @@ library(PEMr)
 
 ### Vignettes
 
-- [PEMprepr](https://github.com/ninoxconsulting/PEMprepr/blob/master/vignettes/PEMprepr.Rmd)
 - How to prepare base data from ML-PEM mapping
 - How to develop a sample plan (road)
 - How to develop a sample plan (helicopter)
