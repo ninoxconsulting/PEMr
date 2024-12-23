@@ -302,15 +302,15 @@ The final step is to compile into a single folder.
 ```{r eval = FALSE}
 
 # define the input directories
-sampleplan_dir <- PEMprepr::read_fid()$dir_201010_inputs$path_abs
+sampleplan_dir <- PEMprepr::read_fid()$dir_201010_inputs$path_rel
 
 #read in cost layer
 # note this points to the old sample plan version created by placeholder script
 acost <- terra::rast(fs::path(sampleplan_dir, "acost.tif" ))
 
 # read in input layers
-bec = terra::rast(fs::path(PEMprepr::read_fid()$dir_201010_inputs$path_abs, "25m", "bec.tif"))
-binned_landscape = terra::rast(fs::path(PEMprepr::read_fid()$dir_201010_inputs$path_abs, "25m", "modules", "landscape_binned.tif"))
+bec = terra::rast(fs::path(PEMprepr::read_fid()$dir_201010_inputs$path_rel, "25m", "bec.tif"))
+binned_landscape = terra::rast(fs::path(PEMprepr::read_fid()$dir_201010_inputs$path_rel, "25m", "modules", "landscape_binned.tif"))
 acost <- terra::rast(fs::path(sampleplan_dir, "acost.tif" ))
 
 
@@ -327,8 +327,8 @@ ggplot2::ggplot(ck, ggplot2::aes(landscape, fill = cost_code)) +
 # generate cost penalty
 # assigns a higher cost to areas with various criteria
 
-vec_dir = fs::path(PEMprepr::read_fid()$dir_1010_vector$path_abs)
-dem = terra::rast(fs::path(PEMprepr::read_fid()$dir_201010_inputs$path_abs, "25m", "dem.tif"))
+vec_dir = fs::path(PEMprepr::read_fid()$dir_1010_vector$path_rel)
+dem = terra::rast(fs::path(PEMprepr::read_fid()$dir_201010_inputs$path_rel, "25m", "dem.tif"))
 cost =  acost
 costval = 3000
 vri_cost = 2500
@@ -357,15 +357,15 @@ cost_masked <- create_cost_exclusion(vec_dir = vec_dir,
 
 
 terra::writeRaster(cost_masked,
-                   fs::path(PEMprepr::read_fid()$dir_201010_inputs$path_abs,
+                   fs::path(PEMprepr::read_fid()$dir_201010_inputs$path_rel,
                             "cost_final.tif"), overwrite = TRUE)
 
 
 # generate a BGC cost mask per BGC in map area
 
-out_dir <- fs::path(PEMprepr::read_fid()$dir_2010_standard$path_abs, "20_masks")
+out_dir <- fs::path(PEMprepr::read_fid()$dir_2010_standard$path_rel, "20_masks")
 cost_masked <- terra::rast(fs::path(sampleplan_dir, "cost_final.tif" ))
-vec_dir = fs::path(PEMprepr::read_fid()$dir_1010_vector$path_abs)
+vec_dir = fs::path(PEMprepr::read_fid()$dir_1010_vector$path_rel)
 
 
 create_bgc_mask(vec_dir, cost_masked, out_dir = exclusion_path)
@@ -375,7 +375,7 @@ create_bgc_mask(vec_dir, cost_masked, out_dir = exclusion_path)
 
 # Move files to the same folder (Note this might be redundant if needed)
 
-root_path <- fs::path(PEMprepr::read_fid()$dir_201010_inputs$path_abs)
+root_path <- fs::path(PEMprepr::read_fid()$dir_201010_inputs$path_rel)
 
 move_files <- function(root_path){
 
@@ -408,7 +408,7 @@ move_files(root_path)
 
 ```
 
-### congratulaitions you are now ready to start developing the sample plan ! 
+### congratulations you are now ready to start developing the sample plan ! 
 
 
 
@@ -428,17 +428,13 @@ library(PEMsamplr)
 #devtools::install_github("kdaust/clhs")
 library(clhs)
 
-
-
 # define the location of input layers used in the latin hyper cube sampling
-landscape_dir <- fs::path(PEMprepr::read_fid()$dir_201010_inputs$path_abs)
+landscape_dir <- fs::path(PEMprepr::read_fid()$dir_201010_inputs$path_rel)
 
 # define the location of the output clhs points
-clhs_out_dir <- PEMprepr::read_fid()$dir_20103010_clhs$path_abs
+clhs_out_dir <- PEMprepr::read_fid()$dir_20103010_clhs$path_rel
 
 # stack the layers and convert to factor
-# TODO: potential to clean this up into a seperate script
-
 fileoi <- c("dah_LS.tif", "mrvbf_LS.tif", "landform_LS.tif")
 filesoi <- list.files(landscape_dir, full.names = TRUE)[list.files(landscape_dir) %in% fileoi]
 
@@ -456,8 +452,7 @@ terra::is.factor(all_cov)
 
 # read in bec data and loop through each bec zone to generate clhs sample plans
 
-
-bec_dir = fs::path(PEMprepr::read_fid()$dir_201020_masks$path_abs)
+bec_dir = fs::path(PEMprepr::read_fid()$dir_201020_masks$path_rel)
 
 boi <- list.files(bec_dir, pattern = ".tif")
 #subset only some files from list
@@ -500,12 +495,11 @@ for(b in boi) {
 
 plot_clhs_cost(clhs_out_dir)
 
-
 # After a review, we need to select a sample plan for each BEC zone. This is 
-# usually the plan with the lowest cost. This will be the input to geterate the 
+# usually the plan with the lowest cost. This will be the input to generate the 
 # full sample plan. 
 
-clhs_out_dir <- PEMprepr::read_fid()$dir_20103010_clhs$path_abs
+clhs_out_dir <- PEMprepr::read_fid()$dir_20103010_clhs$path_rel
 
 # two examples of potential clhs sets to use for full sample plan 
 
@@ -518,6 +512,94 @@ create_sampleplan(clhs_set)
 
 ```
 
+
+### congratulations you are now ready to go in the field and start sampling!
+
+
+
+
+
+# Post Fieldwork data processing 
+
+```{r, eval = FALSE}
+
+# read in the raw field data and prepare it for PEM analysis
+
+# note this section is still in development branch 
+remotes::install_github("ninoxconsulting/PEMsamplr", ref = "create_sampleplan_sub")
+library(PEMsamplr)
+
+
+# set up folder paths
+
+# location of final s1_sample plan / gpkg + where transect_layout will reside
+#input_file <- fs::path(PEMprepr::read_fid()$dir_20104020_transect$path_abs, "s1_sampling.gpkg")
+input_path <- PEMprepr::read_fid()$dir_20104020_transect$path_rel
+
+# location where the final simplified transect layer will be stored
+out_dir = PEMprepr::read_fid()$dir_201040_plan_final$path_rel
+
+
+
+
+# generate simple transect plan layer
+transect_layout <- simplify_transectlayout(input_path, 
+                                           out_dir, 
+                                           write_output = FALSE, 
+                                           overwrite = FALSE)
+
+
+# for test aoi - prepared field data
+
+# read in the prepped transect layout and buffer
+transect_layout <- sf::st_read(fs::path(out_dir, "transect_layout_date_creek_demo.gpkg"))
+
+
+
+
+
+
+##### process Raw field data 
+
+# location of the raw field data
+rawdat <- PEMprepr::read_fid()$dir_20105010_raw_field_data$path_rel
+
+#location where cleaned data will be stored
+cleandat <- PEMprepr::read_fid()$dir_20105020_clean_field_data$path_rel
+
+
+
+
+# import and clean field data
+points <- format_fielddata(rawdat, 
+                           transect_layout, 
+                           buffer = 10, 
+                           write_output = TRUE, 
+                           out_name = "s1_points_raw.gpkg")
+
+
+# format tracklog (optional) 
+tracks <- format_tracklog(rawdat, 
+                          transect_layout, 
+                          buffer = 10, 
+                          write_output = TRUE, 
+                          out_name = "s1_track_raw.gpkg")
+
+
+# convert the points datas to cleaned points to line segments
+processed_transects <- make_lines(points = points,
+                                  transect_layout = transect_layout,
+                                  method = "pts2lines",
+                                  buffer = 20,
+                                  write_output = TRUE,
+                                  out_dir = fs::path(PEMprepr::read_fid()$dir_20105020_clean_field_data$path_rel),
+                                  out_name = "proc_s1_transects5.gpkg")
+
+
+```
+
+
+```
 
 
 
