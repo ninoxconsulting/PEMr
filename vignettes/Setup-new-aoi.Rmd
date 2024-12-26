@@ -568,8 +568,6 @@ rawdat <- PEMprepr::read_fid()$dir_20105010_raw_field_data$path_rel
 cleandat <- PEMprepr::read_fid()$dir_20105020_clean_field_data$path_rel
 
 
-
-
 # import and clean field data
 points <- format_fielddata(rawdat, 
                            transect_layout, 
@@ -596,12 +594,54 @@ processed_transects <- make_lines(points = points,
                                   out_name = "proc_s1_transects5.gpkg")
 
 
-```
+
+
+
+# convert the points datas to cleaned points to line segments
+processed_transects <- make_lines(
+  points = points,
+  transect_layout = transect_layout,
+  method = "pts2lines",
+  buffer = 20,
+  write_output = TRUE,
+  out_dir = fs::path(PEMprepr::read_fid()$dir_20105020_clean_field_data$path_rel),
+  out_name = "proc_s1_transects5.gpkg"
+)
+
+
+# convert pt to lines (2 options here) with neighbours or without
+processed_pts <- convert_lines_pts(
+  processed_transects = processed_transects,
+  buffer = 2.5,
+  neighbours = FALSE,
+  trast = fs::path(PEMprepr::read_fid()$dir_1020_covariates$path_rel, "5m", "template.tif"),
+  write_output = TRUE,
+  out_dir = PEMprepr::read_fid()$dir_20105020_clean_field_data$path_rel,
+  out_name = "allpoints.gpkg"
+)
+
+
+pp <- convert_lines_pts(
+  processed_transects = processed_transects,
+  buffer = 2.5,
+  neighbours = TRUE,
+  trast = fs::path(PEMprepr::read_fid()$dir_1020_covariates$path_rel, "5m", "template.tif"),
+  write_output = TRUE,
+  out_dir = PEMprepr::read_fid()$dir_20105020_clean_field_data$path_rel,
+  out_name = "allpoints_n.gpkg"
+)
+
+# attribute the points with covariates
+
+att_pts <- attribute_points(
+  data_pts = processed_pts,
+  cov_dir = fs::path(PEMprepr::read_fid()$dir_1020_covariates$path_rel, "5m"),
+  write_output = FALSE,
+  out_dir = fs::path(PEMprepr::read_fid()$dir_20105030_attributed_field_data$path_rel),
+  out_name = "allpoints_att.gpkg")
 
 
 ```
-
-
 
 
 
