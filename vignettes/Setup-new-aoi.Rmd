@@ -611,7 +611,7 @@ processed_transects <- make_lines(
 
 # convert pt to lines (2 options here) with neighbours or without
 processed_pts <- convert_lines_pts(
-  processed_transects = processed_transects,
+  processed_lines = processed_transects,
   buffer = 2.5,
   neighbours = FALSE,
   trast = fs::path(PEMprepr::read_fid()$dir_1020_covariates$path_rel, "5m", "template.tif"),
@@ -622,7 +622,7 @@ processed_pts <- convert_lines_pts(
 
 
 pp <- convert_lines_pts(
-  processed_transects = processed_transects,
+  processed_lines = processed_transects,
   buffer = 2.5,
   neighbours = TRUE,
   trast = fs::path(PEMprepr::read_fid()$dir_1020_covariates$path_rel, "5m", "template.tif"),
