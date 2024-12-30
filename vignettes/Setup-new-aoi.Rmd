@@ -557,8 +557,6 @@ transect_layout <- sf::st_read(fs::path(out_dir, "transect_layout_date_creek_dem
 
 
 
-
-
 ##### process Raw field data 
 
 # location of the raw field data
