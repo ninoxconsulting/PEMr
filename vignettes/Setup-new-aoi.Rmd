@@ -604,21 +604,7 @@ key <- generate_mapkey(
 
 
 
-
-# convert the points datas to cleaned points to line segments
-processed_transects <- make_lines(points = points,
-                                  transect_layout = transect_layout,
-                                  method = "pts2lines",
-                                  buffer = 20,
-                                  write_output = TRUE,
-                                  out_dir = fs::path(PEMprepr::read_fid()$dir_20105020_clean_field_data$path_rel),
-                                  out_name = "proc_s1_transects5.gpkg")
-
-
-
-
-
-# convert the points datas to cleaned points to line segments
+# convert the points data to cleaned points to line segments
 processed_transects <- make_lines(
   points = points,
   transect_layout = transect_layout,
