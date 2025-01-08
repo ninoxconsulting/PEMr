@@ -368,7 +368,7 @@ cost_masked <- terra::rast(fs::path(sampleplan_dir, "cost_final.tif" ))
 vec_dir = fs::path(PEMprepr::read_fid()$dir_1010_vector$path_rel)
 
 
-create_bgc_mask(vec_dir, cost_masked, out_dir = exclusion_path)
+create_bgc_mask(vec_dir, cost_masked, out_dir = out_dir)
 
 
 
@@ -422,7 +422,7 @@ move_files(root_path)
 #remotes::install_github("ninoxconsulting/PEMprepr")
 library(PEMprepr)
 
-remotes::install_github("ninoxconsulting/PEMsamplr", ref = "create_sampleplan")
+#remotes::install_github("ninoxconsulting/PEMsamplr", ref = "create_sampleplan")
 library(PEMsamplr)
 
 #devtools::install_github("kdaust/clhs")
@@ -440,14 +440,14 @@ filesoi <- list.files(landscape_dir, full.names = TRUE)[list.files(landscape_dir
 
 all_cov <- terra::rast(filesoi)
 all_cov <- terra::as.factor(all_cov)
-terra::is.factor(all_cov)
+#terra::is.factor(all_cov)
 
 # add cost layer 
 cost <- terra::rast(fs::path(landscape_dir, "cost_final.tif"))
 all_cov<- c(all_cov, cost)
 
 # check that the cavariates are factors (not needed for cost layer)
-terra::is.factor(all_cov)
+#terra::is.factor(all_cov)
 
 
 # read in bec data and loop through each bec zone to generate clhs sample plans
