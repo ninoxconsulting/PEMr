@@ -591,7 +591,7 @@ tracks <- format_tracklog(rawdat,
 key <- generate_mapkey(
   data_pts  = fs::path(PEMprepr::read_fid()$dir_20105020_clean_field_data$path_rel, "s1_points_raw.gpkg"),
   write_output = TRUE,
-  out_dir = fs::path(PEMprepr::read_fid()$dir_3010_inputs$path_rel),
+  out_dir = fs::path(PEMprepr::read_fid()$dir_30_model$path_rel)),
   out_name = "mapunitkey.csv"
 )
 
@@ -647,6 +647,19 @@ att_pts <- attribute_points(
   write_output = FALSE,
   out_dir = fs::path(PEMprepr::read_fid()$dir_20105030_attributed_field_data$path_rel),
   out_name = "allpoints_att.gpkg")
+
+
+## generate a covariate key file
+
+
+
+library(PEMmodelr)
+
+generate_covar_key(att_pts, overwrite = TRUE)
+
+
+# manually check the key and assign the correct covariate type to each column
+
 
 
 
