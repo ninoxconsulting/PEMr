@@ -651,8 +651,7 @@ att_pts <- attribute_points(
 
 ## generate a covariate key file
 
-
-
+remotes::install_github("ninoxconsulting/PEMmodelr", ref = "prep_training_data")
 library(PEMmodelr)
 
 generate_covar_key(att_pts, overwrite = TRUE)
