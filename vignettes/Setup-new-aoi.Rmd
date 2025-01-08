@@ -328,7 +328,7 @@ ggplot2::ggplot(ck, ggplot2::aes(landscape, fill = cost_code)) +
 # assigns a higher cost to areas with various criteria
 
 vec_dir = fs::path(PEMprepr::read_fid()$dir_1010_vector$path_rel)
-dem = terra::rast(fs::path(PEMprepr::read_fid()$dir_201010_inputs$path_rel, "25m", "dem.tif"))
+dem = terra::rast(fs::path(PEMprepr::read_fid()$dir_201010_inputs$path_rel, "dem.tif"))
 cost =  acost
 costval = 3000
 vri_cost = 2500
@@ -389,14 +389,14 @@ move_files <- function(root_path){
 
     if(finame %in% froot) {
       cli::cli_alert_success(
-        " {.val finame}. skipped "
+        " {.val {finame}}. skipped "
       )
     } else {
 
       fnew <- fs::path(root_path, finame)
       fmove <- fs::file_move(i, fnew)
       cli::cli_alert_success(
-        " {.val i}. moved to  "
+        " {.val {i}}. moved to  "
       )
     }
   }
