@@ -1,0 +1,204 @@
+---
+title: "Run_forest_non-forest_model"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Run_forest_non-forest_model}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(PEMr)
+```
+
+
+```{r, eval = FALSE}
+
+#remotes::install_github("ninoxconsulting/PEMprepr")
+library(PEMprepr)
+
+#remotes::install_github("ninoxconsulting/PEMsamplr", ref = "create_sampleplan_sub")
+library(PEMsamplr)
+library(PEMmodelr)
+
+############################
+## 1 prep forest_non_forest model
+############################
+
+#might want to generate a subfolder here but keeping it at root level for now
+
+out_dir = fs::path(PEMprepr::read_fid()$dir_3020_draft$path_rel, "10_fnf")
+
+covarkey = read.csv(fs::path(PEMprepr::read_fid()$dir_30_model$path_rel,"covar_key.csv"))
+
+## 2.1 prep all training points
+
+tpts <- prep_tps(
+  allpts = sf::st_read(fs::path(PEMprepr::read_fid()$dir_20105030_attributed_field_data$path_rel, "allpoints_att.gpkg")),
+  mapkey = read.csv(fs::path(PEMprepr::read_fid()$dir_30_model$path_abs,"mapunitkey_final.csv")),
+  covarkey = read.csv(fs::path(PEMprepr::read_fid()$dir_30_model$path_rel,"covar_key.csv")),
+  attribute = "mapunit_fnf",
+  bec = sf::st_read(fs::path(PEMprepr::read_fid()$dir_1010_vector$path_rel, "bec.gpkg")),
+  min_no = 20)
+
+core_names  <- covarkey |>
+  dplyr::filter(type == "core") |>
+  dplyr::select(value) |> dplyr::pull()
+
+
+# get full list of covariates
+mcols <- names(tpts)[!names(tpts) %in% c(core_names)]
+saveRDS(mcols, fs::path(out_dir, "full_covariate_list.rds"))
+
+
+# convert to csv
+tpts <- cbind(tpts, as.data.frame(sf::st_coordinates(tpts))) |>
+  sf::st_drop_geometry()
+
+write.csv(tpts, fs::path(out_dir, "training_pts.csv"), row.names = FALSE)
+
+
+
+
+# 1.2 generate a fuzzy matric for the model..
+
+#Might not need this as "nonforest and forest cross over = 0"
+
+# temp fix til function is fixed
+#fmat <- read.csv(fs::path("fuzzy_matrix.csv" ))
+#write.csv(fmat, fs::path(out_dir, "fuzzy_matrix.csv"), row.names = FALSE)
+
+
+
+
+
+
+## 1.3 Recursive Feature selection / Correlated variable reduction
+# Requires only one run, not per BGC
+
+mcols <- readRDS(fs::path(out_dir, "full_covariate_list.rds"))
+
+reduced_vars <- reduce_features(mcols,
+                                covar_dir = fs::path(PEMprepr::read_fid()$dir_1020_covariates$path_rel, "5m"),
+                                covarkey = covarkey,
+                                covtype = c("dem", "structure"),
+                                cutoff = 0.90)
+
+write.csv(reduced_vars, fs::path(out_dir, "reduced_covariate_list.csv"), row.names = FALSE)
+
+
+
+## 1.4) prepare the training point models (fnf)
+
+tpts <- read.csv(fs::path(out_dir, "training_pts.csv"))
+
+model_bgc <- prep_model_tps(
+  prepped_points = tpts,
+  covars = reduced_vars,
+  model_type = "fnf",
+  out_dir = out_dir
+)
+
+
+
+# 1.5) determine optimum parameters for the model
+
+tune_bgc <- tune_model_params(
+  prepped_points = model_bgc,
+  covars = reduced_vars,
+  min_no = 20,
+  out_dir = out_dir,
+  output_type = "best",
+  accuracy_type = "roc_auc"
+)
+
+
+
+######################
+# 3) Run base model
+######################
+
+#This runs the model with no balancing using the parameters generated above
+out_dir = fs::path(PEMprepr::read_fid()$dir_3020_draft$path_rel, "10_fnf")
+
+# read in data
+bgc_pts_subzone <- readRDS(fs::path(out_dir, "model_input_pts.rds"))
+
+# read in fuzzy matrix
+fmat <- read.csv(file.path(out_dir, "fuzzy_matrix.csv" )) |>
+  dplyr::select(target, Pred, fVal)
+
+covars = read.csv(fs::path(out_dir, "reduced_covariate_list.csv")) |> dplyr::pull()
+
+run_base_model(
+  bgc_pts_subzone = bgc_pts_subzone,
+  fmat = fmat,
+  covars = covars,
+  use_neighbours = FALSE,
+  detailed_output = TRUE,
+  out_dir = out_dir)
+
+
+
+######################
+# 3) Balance?
+######################
+
+
+
+
+
+
+
+######################
+# 4) Run final model  - forest and non forest
+######################
+
+
+out_dir = fs::path(PEMprepr::read_fid()$dir_3020_draft$path_rel, "10_fnf")
+train_data <- readRDS(fs::path(out_dir, "model_input_pts.rds"))
+covars <- read.csv(fs::path(out_dir, "reduced_covariate_list.csv")) |> dplyr::pull()
+
+
+final_mod <- run_final_model(train_data,
+                             covars,
+                             ds_ratio = NA,
+                             sm_ratio = NA,
+                             mname = "base",
+                             report = FALSE,
+                             out_dir = out_dir)
+
+
+######################
+# 4) Predict maps
+######################
+
+model_dir = fs::path(PEMprepr::read_fid()$dir_3020_draft$path_rel, "10_fnf")
+covars = read.csv(fs::path(model_dir, "reduced_covariate_list.csv")) |>  dplyr::pull()
+cov_dir = fs::path(PEMprepr::read_fid()$dir_1020_covariates$path_rel, "5m")
+tile_dir = fs::path(PEMprepr::read_fid()$dir_30_model$path_rel,"tiles")
+bec_shp <- sf::st_read(fs::path(PEMprepr::read_fid()$dir_1010_vector$path_rel,"bec.gpkg"), quiet = TRUE)
+
+
+run_predict_map(
+  model_type = "fnf",
+  model_dir = model_dir,
+  covars = covars,
+  cov_dir = cov_dir,
+  tile_dir = tile_dir,
+  bec_shp = bec_shp
+)
+
+
+
+
+
+```
+
