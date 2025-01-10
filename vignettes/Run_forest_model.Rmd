@@ -1,0 +1,352 @@
+---
+title: "Run_forest_model"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Run_forest_model}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(PEMr)
+```
+
+# Run the forest
+
+```{r, eval = FALSE}
+
+remotes::install_github("ninoxconsulting/PEMmodelr", ref = "prep_training_data")
+
+library(PEMmodelr)
+
+############################
+## 1 prep forest model
+############################
+
+
+#might want to generate a subfolder here but keeping it at root level for now
+
+out_dir = fs::path(PEMprepr::read_fid()$dir_3020_draft$path_rel, "20_f")
+covarkey = read.csv(fs::path(PEMprepr::read_fid()$dir_30_model$path_rel,"covar_key.csv"))
+
+
+
+## 1.1 prep all training points
+
+tpts <- prep_tps(
+  allpts = sf::st_read(fs::path(PEMprepr::read_fid()$dir_20105030_attributed_field_data$path_rel, "allpoints_att.gpkg")),
+  mapkey = read.csv(fs::path(PEMprepr::read_fid()$dir_30_model$path_abs,"mapunitkey_final.csv")),
+  covarkey = covarkey,
+  attribute = "mapunit_ss_realm",
+  bec = sf::st_read(fs::path(PEMprepr::read_fid()$dir_1010_vector$path_rel, "bec.gpkg")),
+  min_no = 20)
+
+core_names  <- covarkey |>
+  dplyr::filter(type == "core") |>
+  dplyr::select(value) |> dplyr::pull()
+
+
+
+# get full list of covariates
+mcols <- names(tpts)[!names(tpts) %in% c(core_names)]
+saveRDS(mcols, fs::path(out_dir, "full_covariate_list.rds"))
+
+
+# convert to csv
+tpts <- cbind(tpts, as.data.frame(sf::st_coordinates(tpts))) |>
+  sf::st_drop_geometry()
+
+write.csv(tpts, fs::path(out_dir, "training_pts.csv"), row.names = FALSE)
+
+
+
+
+# 1.2 generate a fuzzy matric for the model..
+
+# note this needs the arrtibute... or could update based on entire key (will need to build a seperate one per model? ie.nonforest etc)
+# this is currently a placeholder that claire is working on.
+# using old version for the time being.
+
+
+# temp fix til function is fixed
+#fmat <- read.csv(fs::path("fuzzy_matrix.csv" ))
+#write.csv(fmat, fs::path(out_dir, "fuzzy_matrix.csv"), row.names = FALSE)
+
+
+
+
+
+## 1.3 Recursive Feature selection / Correlated variable reduction
+# Requires only one run, not per BGC
+
+mcols <- readRDS(fs::path(out_dir, "full_covariate_list.rds"))
+
+reduced_vars <- reduce_features(mcols,
+                                covar_dir = fs::path(PEMprepr::read_fid()$dir_1020_covariates$path_rel, "5m"),
+                                covarkey = covarkey,
+                                covtype = c("dem"),
+                                cutoff = 0.90)
+
+write.csv(reduced_vars, fs::path(out_dir, "reduced_covariate_list.csv"), row.names = FALSE)
+
+
+
+## 1.4) prepare the training point models per BEC.
+
+
+tpts <- read.csv( fs::path(out_dir, "training_pts.csv"))
+
+model_bgc <- prep_model_tps(
+  prepped_points = tpts,
+  covars = reduced_vars,
+  model_type = "f",
+  outname = "model_input_pts.rds",
+  out_dir = out_dir
+)
+
+
+
+# 1.5) determine optimum parameters for the model
+
+tune_bgc <- tune_model_params(
+  prepped_points = model_bgc,
+  covars = reduced_vars,
+  min_no = 20,
+  out_dir = out_dir,
+  output_type = "best",
+  accuracy_type = "roc_auc"
+)
+
+# add message if failed to run increase the min_no value
+# add output as needed
+
+
+
+
+# if you full output is used you can also generate plots
+#
+# # best_tune <- select_best(tune_res, metric = "accuracy")
+# tune_res |>
+#   tune::collect_metrics()  |>
+#   dplyr::filter(.metric == "roc_auc")  |>
+#   dplyr::select(mean, min_n, mtry)  |>
+#   tidyr::pivot_longer(min_n:mtry,
+#                values_to = "value",
+#                names_to = "parameter"
+#   )  |>
+#   ggplot2::ggplot(ggplot2::aes(value, mean, color = parameter)) +
+#   ggplot2::geom_point(show.legend = FALSE) +
+#   ggplot2::facet_wrap(~parameter, scales = "free_x") +
+#   ggplot2::labs(x = NULL, y = "AUC")
+#
+# best_tune <- tune::select_best(tune_res, metric = "accuracy")
+#
+# write.csv(best_tune, file.path(fid$model_inputs0310[2], "best_tuning.csv"))
+#
+
+
+######################
+# 2) Run base model
+######################
+
+#This runs the model with no balancing using the parameters generated above
+
+out_dir = fs::path(PEMprepr::read_fid()$dir_3020_draft$path_rel, "20_f")
+
+# read in data
+bgc_pts_subzone <- readRDS(fs::path(out_dir, "model_input_pts.rds"))
+
+# read in fuzzy matrix
+fmat <- read.csv(file.path(out_dir, "fuzzy_matrix.csv" )) |>
+  dplyr::select(target, Pred, fVal)
+
+covars = read.csv(fs::path(out_dir, "reduced_covariate_list.csv")) |> dplyr::pull()
+
+## Run base model
+run_base_model(
+  bgc_pts_subzone = bgc_pts_subzone,
+  fmat = fmat,
+  covars = covars,
+  use_neighbours = FALSE,
+  detailed_output = TRUE,
+  out_dir = out_dir)
+
+
+
+######################
+# 3) Run final model
+######################
+
+out_dir = fs::path(PEMprepr::read_fid()$dir_3020_draft$path_rel, "20_f")
+train_data <- readRDS(fs::path(out_dir, "model_input_pts.rds"))
+covars <- read.csv(fs::path(out_dir, "reduced_covariate_list.csv")) |> dplyr::pull()
+
+# read in fuzzy matrix
+#fmat <- read.csv(fs::path(out_dir, "fuzzy_matrix.csv")) |>
+#  dplyr::select(target, Pred, fVal)
+
+final_mod <- run_final_model(train_data,
+                             covars,
+                             ds_ratio = NA,
+                             sm_ratio = NA,
+                             mname = "base",
+                             report = FALSE,
+                             out_dir = out_dir)
+
+
+
+######################
+# 4) Predict maps
+######################
+
+model_dir = fs::path(PEMprepr::read_fid()$dir_3020_draft$path_rel, "20_f")
+covars = read.csv(fs::path(model_dir, "reduced_covariate_list.csv")) |>  dplyr::pull()
+cov_dir = fs::path(PEMprepr::read_fid()$dir_1020_covariates$path_rel, "5m")
+tile_dir = fs::path(PEMprepr::read_fid()$dir_30_model$path_rel,"tiles")
+bec_shp <- sf::st_read(fs::path(PEMprepr::read_fid()$dir_1010_vector$path_rel,"bec.gpkg"), quiet = TRUE)
+
+
+run_predict_map(
+  model_type = "f",
+  model_dir = model_dir,
+  covars = covars,
+  cov_dir = cov_dir,
+  tile_dir = tile_dir,
+  bec_shp = bec_shp
+)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+######################################
+# 4) More advanced modelling options
+######################################
+
+# 4.1 Determine optimum Theta value for the metric of choice
+# run all theta options and consolidate output
+
+
+source("fn_generate_theta_metrics.R")
+
+
+bgcs <- names(bgc_pts_subzone)
+
+for(i in bgcs){
+  i = bgcs[3]
+
+  datafolder <- fs::path(out_dir, i)
+  acc_out <- generate_theta_metrics(datafolder)
+  theta_thresh <- select_theta_threshold(acc_out)
+
+  write.csv(acc_out, fs::path(datafolder, "compiled_theta_results.csv"))
+  write.csv(theta_thresh, file.path(datafolder, "theta_threshold.csv"))
+}
+
+
+#   #   overall_acc <- ggplot(aes(y = value, x = theta_final), data = acc_out ) +
+#   #     geom_boxplot() +
+#   #     scale_fill_brewer(type = "qual") +
+#   #     facet_wrap(~type, scales = "free_x")+
+#   #     geom_hline(yintercept = 0.65,linetype ="dashed", color = "black") +
+#   #     theme_pem_facet() +
+#   #    # scale_fill_manual(values=c("grey90", "grey75", "grey50", "grey35","grey10"))+
+#   #     theme(axis.text.x = element_text(angle = 90, hjust = 1), legend.position="none") +
+#   #     xlab("Metric") + ylab("Accuracy") +
+#   #     ylim(0, 1)
+#   #
+#   # overall_acc
+#
+# }
+
+
+
+############################################################
+
+# 4.2 Determine to optimum Balance options for models
+
+############################################################
+
+## Build grid of combinations of downsampling and smoting and run all
+## combinations then compare outputs to assess optimum
+## Note optimum will depend on which outcome desired.
+out_dir = fs::path(PEMprepr::read_fid()$dir_30_model$path_rel, "20_f")
+
+source("fn_balance_optimisation_bgc.R")
+source("fn_balance_optimisation.R")
+library(foreach)
+
+
+# read in data
+bgc_pts_subzone <- readRDS(fs::path(out_dir , "model_input_pts.rds"))
+
+# read in fuzzy matrix
+fmat <- read.csv(fs::path(out_dir , "fuzzy_matrix.csv" )) |>
+  dplyr::select(target, Pred, fVal)
+
+covars = read.csv(fs::path(out_dir , "reduced_covariate_list.csv")) |> dplyr::pull()
+
+
+# Run optimizations for each bGC
+
+balance_optimisation_bgc(
+  bgc_pts_subzone = bgc_pts_subzone,
+  fmat = fmat,
+  covars = covars,
+  out_dir = out_dir
+)
+
+
+# combine all balance options into a single data table
+acc_total <- foreach::foreach(xx = names(bgc_pts_subzone), .errorhandling = "pass",.combine = rbind) %do% {
+  #k = data_list[2]
+  # print(k)
+  outDir = file.path(fid$model_draft[2], xx)
+  allacc <- combine_balance_ouputs(outDir)
+  allacc <- allacc %>% dplyr::mutate(bgc = xx)
+
+}
+
+# select the best metrics for each Bec variant
+bgcs <- unique(as.factor(acc_total$bgc)) %>% droplevels()
+best_results <- foreach(b = levels(bgcs), .combine=rbind) %do% {
+  #b <- bgcs[1]
+  acc_bgc <- acc_total %>% dplyr::filter(bgc %in% b)
+  best_metrics <- select_best_acc(acc_bgc) %>%
+    mutate(bgc = b)
+  best_metrics
+
+}
+
+in_dir <- fid$model_inputs0310[2]
+write.csv(best_results, file.path(in_dir, "best_balancing.csv"))
+
+##################################################################################
+
+
+
+
+
+
+
+```
+

@@ -1,0 +1,60 @@
+---
+title: "combine_all_maps"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{combine_all_maps}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(PEMr)
+```
+
+```{r, eval = FALSE}
+
+#remotes::install_github("ninoxconsulting/PEMprepr")
+library(PEMprepr)
+
+#remotes::install_github("ninoxconsulting/PEMsamplr", ref = "create_sampleplan_sub")
+library(PEMsamplr)
+
+# get the model directory
+
+# fnf model and response key
+fnf_dir <- fs::path(PEMprepr::read_fid()$dir_3020_draft$path_rel, "10_fnf","fnf","map")
+fnf_map <- terra::rast(fs::path(fnf_dir, "best_map.tif"))
+fnf_key <- read.csv(fs::path(fnf_dir, "response_names.csv"))
+
+# forest model and response key
+f_dir <- fs::path(PEMprepr::read_fid()$dir_3020_draft$path_rel, "20_f", "map")
+f_map <- terra::rast(fs::path(f_dir, "best_map.tif"))
+f_key <- read.csv(fs::path(f_dir, "response_key.csv"))
+
+
+# non-forest model and response key
+nf_dir <- fs::path(PEMprepr::read_fid()$dir_3020_draft$path_rel, "30_nf", "nf","map")
+nf_map <- terra::rast(fs::path(nf_dir, "best_map.tif"))
+nf_key <- read.csv(fs::path(nf_dir, "response_names.csv"))
+
+
+out_dir <- fs::path(PEMprepr::read_fid()$dir_3020_draft$path_rel)
+outname <- "full_map.tif"
+
+
+final_map(fnf_map, fnf_key, f_map, f_key,  nf_map,  nf_key,
+          out_dir,  outname = "full_map.tif")
+
+# mask the forest out of non-forest map and update key
+
+
+
+```
+
