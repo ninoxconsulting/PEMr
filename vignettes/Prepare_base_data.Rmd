@@ -19,8 +19,16 @@ knitr::opts_chunk$set(
 library(PEMr)
 ```
 
+## 1. Prepare base data
+
+This vignette will guide you through the process of preparing base data for the PEMr workflow.
+
+In this step we will create the base vector and raster data required for the modelling process. THe default spatial scale for modelling in this example is 5m with all data prepared using the EPSG:3005 coordinate system. This workflow requires data and inputs specific for British Columbia, Canada.  
+
 
 ## 2. Generating base data for modelling (5m resolution as default) 
+
+Firstly we will load required libraries and ensure we have access to the file folder structure and retrieval workflow using the read_fid() function to locate specified folders. In the following workflow where possible we provide the default folder locations to ensure the workflow runs smoothly. 
 
 
 ```{r setup}
@@ -38,6 +46,11 @@ fid <- read_fid()
 
 
 ### create model templates 
+
+We will modify the spatial file (.gpkg or .shp) which defines the bounds of the area to be included in modelling. This is commonly termed aoi or area of interest. We modify the aoi by expanding or reducing its size to round numbers, to provide a standard aoi snapped to a common extent. This ensures it can be easily stacked in future analysis. 
+
+Once the spatial files is snapper we will create a template raster with the same extent and at a desired resolution. In this example we use 5m as this is the desired modelling resolution. 
+
 
 ```{r create template}
 #| eval: false
@@ -61,6 +74,9 @@ r5 <- create_template_raster(aoi, res = 5)
 
 
 ### generate base vector layers
+
+
+
 
 ```{r}
 #| eval: false
