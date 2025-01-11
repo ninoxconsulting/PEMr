@@ -1,0 +1,169 @@
+---
+title: "Post_data_collection"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Post_data_collection}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(PEMr)
+```
+
+
+# Post Fieldwork data processing 
+
+```{r, eval = FALSE}
+
+# read in the raw field data and prepare it for PEM analysis
+
+# note this section is still in development branch 
+remotes::install_github("ninoxconsulting/PEMsamplr", ref = "create_sampleplan_sub")
+library(PEMsamplr)
+
+
+# set up folder paths
+
+# location of final s1_sample plan / gpkg + where transect_layout will reside
+#input_file <- fs::path(PEMprepr::read_fid()$dir_20104020_transect$path_abs, "s1_sampling.gpkg")
+input_path <- PEMprepr::read_fid()$dir_20104020_transect$path_rel
+
+# location where the final simplified transect layer will be stored
+out_dir = PEMprepr::read_fid()$dir_201040_plan_final$path_rel
+
+
+
+
+# generate simple transect plan layer
+transect_layout <- simplify_transectlayout(input_path, 
+                                           out_dir, 
+                                           write_output = FALSE, 
+                                           overwrite = FALSE)
+
+
+# for test aoi - prepared field data
+
+# read in the prepped transect layout and buffer
+transect_layout <- sf::st_read(fs::path(out_dir, "transect_layout_date_creek_demo.gpkg"))
+
+
+
+
+##### process Raw field data 
+
+# location of the raw field data
+rawdat <- PEMprepr::read_fid()$dir_20105010_raw_field_data$path_rel
+
+#location where cleaned data will be stored
+cleandat <- PEMprepr::read_fid()$dir_20105020_clean_field_data$path_rel
+
+
+# import and clean field data
+points <- format_fielddata(rawdat,
+  transect_layout,
+  buffer = 10,
+  write_output = TRUE,
+  out_dir = fs::path(PEMprepr::read_fid()$dir_20105020_clean_field_data$path_rel),
+  out_name = "s1_points_raw.gpkg"
+)
+
+
+# format tracklog (optional)
+tracks <- format_tracklog(rawdat,
+  transect_layout,
+  buffer = 10,
+  write_output = TRUE,
+  out_dir = fs::path(PEMprepr::read_fid()$dir_20105020_clean_field_data$path_rel),
+  out_name = "s1_track_raw.gpkg"
+)
+
+
+
+# check and clean up field data names
+key <- generate_mapkey(
+  data_pts  = fs::path(PEMprepr::read_fid()$dir_20105020_clean_field_data$path_rel, "s1_points_raw.gpkg"),
+  write_output = TRUE,
+  out_dir = fs::path(PEMprepr::read_fid()$dir_30_model$path_rel)),
+  out_name = "mapunitkey.csv"
+)
+
+
+
+# Manually review the generated basemap key file (mapunit.key) and add missing
+# basemapunit calls if needed.
+
+
+
+# convert the points data to cleaned points to line segments
+processed_transects <- make_lines(
+  points = points,
+  transect_layout = transect_layout,
+  method = "pts2lines",
+  buffer = 20,
+  write_output = TRUE,
+  out_dir = fs::path(PEMprepr::read_fid()$dir_20105020_clean_field_data$path_rel),
+  out_name = "proc_s1_transects5.gpkg"
+)
+
+
+# convert pt to lines (2 options here)
+# 1. convert points to lines - no neighbours
+processed_pts <- convert_lines_pts(
+  processed_lines = processed_transects,
+  buffer = 2.5,
+  neighbours = FALSE,
+  trast = fs::path(PEMprepr::read_fid()$dir_1020_covariates$path_rel, "5m", "template.tif"),
+  write_output = TRUE,
+  out_dir = PEMprepr::read_fid()$dir_20105020_clean_field_data$path_rel,
+  out_name = "allpoints.gpkg"
+)
+
+#2. convert points to lines - with neighbours
+
+pp <- convert_lines_pts(
+  processed_lines = processed_transects,
+  buffer = 2.5,
+  neighbours = TRUE,
+  trast = fs::path(PEMprepr::read_fid()$dir_1020_covariates$path_rel, "5m", "template.tif"),
+  write_output = FALSE,
+  out_dir = PEMprepr::read_fid()$dir_20105020_clean_field_data$path_rel,
+  out_name = "allpoints_n.gpkg"
+)
+
+
+# attribute the points with covariates
+
+att_pts <- attribute_points(
+  data_pts = processed_pts,
+  cov_dir = fs::path(PEMprepr::read_fid()$dir_1020_covariates$path_rel, "5m"),
+  write_output = FALSE,
+  out_dir = fs::path(PEMprepr::read_fid()$dir_20105030_attributed_field_data$path_rel),
+  out_name = "allpoints_att.gpkg")
+
+
+## generate a covariate key file
+
+remotes::install_github("ninoxconsulting/PEMmodelr", ref = "prep_training_data")
+library(PEMmodelr)
+
+generate_covar_key(att_pts, overwrite = TRUE)
+
+
+# manually check the key and assign the correct covariate type to each column
+
+
+
+
+```
+
+## Congratulations you are now ready to start modelling
+
+
