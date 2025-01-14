@@ -1,8 +1,8 @@
 ---
-title: "Develop_sampleplan"
+title: "Develop_sampleplan_03"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Develop_sampleplan}
+  %\VignetteIndexEntry{Develop_sampleplan_03}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
