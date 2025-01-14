@@ -14,19 +14,20 @@ knitr::opts_chunk$set(
 )
 ```
 
-```{r setup}
+```{r setup, eval = FALSE}
 library(PEMr)
+
+library(PEMprepr)
+library(PEMsamplr)
+library(PEMmodelr)
+
 ```
 
 
+
+
+
 ```{r, eval = FALSE}
-
-#remotes::install_github("ninoxconsulting/PEMprepr")
-library(PEMprepr)
-
-#remotes::install_github("ninoxconsulting/PEMsamplr", ref = "create_sampleplan_sub")
-library(PEMsamplr)
-library(PEMmodelr)
 
 ############################
 ## 1 prep forest_non_forest model
