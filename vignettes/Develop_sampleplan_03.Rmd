@@ -19,37 +19,81 @@ library(PEMr)
 ```
 
 
-
-
 ## 3. Generating landscape data for sample plan development (25m resolution as default) 
 
+## Background
 
-## The workflow of samplr is still in developement and likely to change.
+This document describes a Stage 1 field sampling strategy for application in machine-learning based predictive ecosystem map development.  The objectives of this sample design is to provide an efficient method for collection of unbiased field data for two applications: base-line training point sampling and internal accuracy assessment of the PEM map. 
+
+A optimal sample strategy will balance requirements to be unbiased and statistically sound, to adequately sample the environmental space of the map area, to allow a scaleable number of samples to be selected in the design, and be as cost-efficient as possible.  To meet these competing requirements we apply a cost-constrained, sliced, conditional Latin Hypercube Sample (cLHS) approach based on landscape scale environmental variables to position paired equalateral triangle transects for line-intercept collection of information following a modified Moon et al. methodology.
+
+As the first stage of field data collection, the protocol is not based on existing site series mapping or presumed stand-level variables of importance. The conditioned Latin hypercube sample is based on landscape-scale and geographic variables to ensure coverage of broad physiographic and macroslope position in the map area. We propose to use a simplified Moon method to collect the transect data. In this approach, equilateral transects are traversed and changes from one ecosystem type to another marked along the transect. The GPS tracklog of the field-traverse is smoothed, buffered, and split into segments that designate a band of rasters reflective of individual map units.
+
+These buffered line-intercept data will be used both a source of training points and for an internal accuracy assessment. A ratio of transects will be used for training point generation to build the map (70%) while the remainder will be used as AA polygons to test the accuracy of the modelled map. A boot-strapping procedure using different sets of transects to build and assess the model will provide a measure of variance for the accuracy.
+
+1. For training point generation, rasters falling within the buffered line-intercept polygons representing each map unit will be used as a population from which a cLHS sample will be taken for use as training points representing the map unit in the randomforest model.   
+
+2. For the internal AA, an overlay of a complete transect polygon over the PEM map will provide percent agreement statistics as per Moon. 
+
+Stage 1 field sampling from this method is intented to provide core unbiased information for both of these tasks. This method will be most successful in sampling the common matrix ecosystems but may not satisfactorily sample or evaluate uncommon and small-patch ecosystems.  
+
+It is expected that additional training point data collection by other approaches be conducted concurrently or in the Stage 2:map improvement phase which may involve purposeful sampling of poorly sampled map units, additional transects in areas of high map uncertainty, etc.  These various "map-improvement" approaches to improving the training point data set will be laid out in Stage 2 sampling.
+
+
+## Main Steps to the Stage 1 Field Sampling Strategy
+
+The script below generates a cLHS of points around which field transects are generated for use in field data collection PDF maps. 
+
+There flow of the script follows these steps:
+
+1. Generate all base information needed at a landscape scale (i.e 25m)
+2. Create broad landscape scale covariates (25m)
+3. Create cost layer based on relative ease of access and to minimize sampling of recently cleared stands.
+4. Create an exclusion layer of areas that should not be sampled, such as roads, lakes, etc.
+5. Generate a high cost layer to provide an artificially high value to areas where sampling is less desired. 
+6. Generate cost constrained conditional Latin Hyper cube points
+7. Generate replicates samples plans and review to determine if a revision of cost layer or road access where needed 
+8. Repeat as needed and select the best suited sample plan for each BEC zone.
+8. Once selected generate possible paired sample points adjacent to the cLHS samples at each cardinal and ordinal direction and remove those points falling outside the masked raster stack area.
+8. Generate 750m equilateral triangle transects with the cLHS as centre points, rotate transects randomly, create 10m transect buffer layer.
+9. Export 3 shape files into QGIS, underlay BING or other high-resolution imagery and generate 1:2 000 field sampling maps in QGIS using Atlas function for each transect.
+
+
+## note - The workflow of samplr is still in developement and likely to change.
+
+
+
+1. Generate base information to build sample plan at landscape scale (25m)
+
+To account for edge effect we need to generate a larger landscape area of interest and accompanying base templates. We can then use these templates to extract elevation data (TRIM) and vector layers required to build the sample plan 
 
 
 ```{r}
 #| eval: false
 # vector (aoi, roads and start points)
 
+# define directory where aoi is located 
+
 in_dir = PEMprepr::read_fid()$dir_1010_vector$path_abs
 aoi_file = fs::path(in_dir, "aoi_snapped.gpkg" )
 
 out_dir <- PEMprepr::read_fid()$dir_201010_inputs$path_abs
 
+# generate a larger extent AOI 
 
 aoils <- snap_aoi(aoi_file, method = "expand", buffer = 1000, write_output = FALSE)
 
 sf::st_write(aoils, fs::path(out_dir, "aoi_snapped_ls.gpkg"), append = FALSE)
 
 
-
-# Prepare Raster Data (for landscape)
+# create a raster template at 25m resolution
 
 r25 <- create_template_raster(aoils,
                               res = 25,
                               out_dir = PEMprepr::read_fid()$dir_201010_inputs$path_abs,
                               write_output = TRUE)
 
+# genererate a DEM raster
 
 dem25 = get_cded_dem(aoi = r25,
                      res = 25,
@@ -57,8 +101,7 @@ dem25 = get_cded_dem(aoi = r25,
                      write_output = TRUE)
 
 
-
-# generate a 25m raster
+# generate a BEC raster 
 
 bec_rast25 <- create_bgc_template(
   field = "MAP_LABEL",
@@ -67,8 +110,24 @@ bec_rast25 <- create_bgc_template(
   write_output = TRUE
 )
 
+```
+
+# Generate the landscape scale covariates (25m)
+
+Sample plans are developed at a landscape scale (25m resolution raster). This ensures field samples (collected at a finer scale ie. 5m resolution) are laid out across the environmental space of broader landscape scale drivers. 
+Each study area will be driven by different parameters i.e: low or high relief, and consideration should made before developing the landscape covariates. The following methodology is recommended generally across BC, but may need to be adjusted for areas with very low relief or other landscape drivers.
+Similarly due to differences in topographic features and size of the study area, the parametrization of each of the landscape scale covariates should be reviewed at time of processing to ensure these layers capture landscape variability. The following notes provide information on parameters applied to the study areas Deception Lake, Date Creek and Williams lake and Kooteny Invermere Cranbrook TSAs.  
+Sample planning requires the following covariates: 
+•	BEC	- mapped biogeoclimatic subzone/variants
+•	MRVBF - multiresolution valley bottom flatness 
+•	DAH - diurnal anisotropic heating in 3 classes
+•	Landscape Class-  based on tpi multiscale TPI landform classification
 
 
+These will be writen as tifs to outdir. 
+
+```{r}
+#| eval: false
 # Generate landscape covariates
 
 create_landscape_covariates(
@@ -83,8 +142,20 @@ create_landscape_covariates(
     P_SLOPE = 4.0, P_PCTL = 3.0, UPDATE = 1,
     CLASSIFY = 1, MAX_RES = 100
   ))
+  
+```
 
 
+# created binned landscape 
+
+To test how well the landscape covariates describe the study area, and consequently identify if parameter changes are required, we create a representation of the environmental space. 
+
+We use the create_binned_landscape() function which will stack the landscape covariates created above. This includes DAH (3 classes), MRVBF (6 classes) and landform classes (6 or 10). We can create a landscape variability surface based on the unique combinations of the above landscapes. Depending on the study area complexity we expect roughly 100 or more classes to be created. 
+
+We can use this layer along with cost surface created below to assist in finding alternate transect where we can match environmental space to low cost areas. 
+
+```{r}
+#| eval: false
 
 # create binned landscape
 landscapes <- create_binned_landscape(
@@ -94,15 +165,37 @@ landscapes <- create_binned_landscape(
 
 terra::plot(landscapes)
 
+```
 
+Secondly, we can review the range in environmental space for each BGC to see if we have captured a range which is equivalent to landscape level variation within the BGC variant. Ideally we want to see a wide distribution across all the classes and not skewed to one end or another. 
+
+```{r}
+#| eval: false
 # check landscape class with Bec
+
 routdf <- check_bgc_landscapes(bec_rast25, landscapes)
 
 ggplot2::ggplot(routdf, ggplot2::aes(landscape)) +
   ggplot2::geom_histogram() +
   ggplot2::facet_wrap(~MAP_LABEL)
 
+```
 
+
+
+# Generate cost layer
+
+3.2.1. Developing an accurate cost layer  
+
+We generate a cost layer to ensure samples are laid out in a cost-efficient manner. As field sampling is the most expensive component of PEM modelling, generating an accurate cost layer is critical in minimising field sampling costs. The cost layer is based on speed (or pace) of travel using both travel by road and by foot. 
+Speed of travel on roads varies based on the road class (ie: major hwy speed = 80km/h, Resource Road = 30 km/h), see table below. Travel over land, by foot is based on Tobler’s hiking function (based on slope and distance)
+
+The road layer is very important in developing an accurace cost layer. This oftern requires manual review and detailed revisions and line clean up before use. 
+
+A function has been build to check the basics for the road layer used, however this requres more detailed review manually. 
+
+
+```{r}
 # download roads layer and run through standard checks
 
 out_dir <- PEMprepr::read_fid()$dir_201010_inputs$path_abs
@@ -111,12 +204,21 @@ roadsls <- get_roads(aoils, out_dir)
 
 check_roads(roadsls)
 
+```
 
 
+# Generate a start location 
+
+For each study area you will need to define a start location from which the costs will accumulate. Depending on the study area, this might be a single or multiple locations. In most cases you need to select a location based within the study AOI. If this is not the case your aoi should be expanded or additonal time calculated from start point to actual starting location. 
+
+In this example we show two methods to generate a start location. The first is to use a major town as the start location. The second is to use a user defined location.
+
+A function has been developed to check the basics of the start locations. This includes if the location is connected to the road network (a requirement)
 
 
-
-# Get start points and run checks
+```{r}
+#| eval: false
+ # Get start points and run checks
 
 cities <- sf::st_read(fs::path(PEMprepr::read_fid()$dir_1010_vector$path_rel,"major_towns_bc.gpkg"))
 
@@ -138,12 +240,16 @@ start <- cities[cities$NAME == nearest_town,"NAME"]
 check_locations( roads = roadsls, locations = start)
 
 sf::st_write(start, fs::path(out_dir, "start.gpkg"), append = FALSE)
+```
 
 
+# Generate cost layer
+
+```{r}
 ## Generate the cost layer - need to review these two scripts and decided which method to use. 
 ## These can be run as stand alone scripts and are located here: 
 
-#https://github.com/ninoxconsulting/PEMsamplr/blob/create_sampleplan/R/placeholder_prep_cost_layer_old.R
+#https://github.com/ninoxconsulting/PEMsamplr/blob/main/R/placeholder_prep_cost_layer_old.R
 
 
 ## Currently there are two options
@@ -162,6 +268,8 @@ sf::st_write(start, fs::path(out_dir, "start.gpkg"), append = FALSE)
 This section of codes generates all the required inputs to build the sample plan. 
 The final step is to compile into a single folder. 
 
+After generating the cost layer we can assess how expensive each of the BCGs will be to sample using the check_bgc_cost() function. This classified all possible sampleable pixals into low, moderate, high, very high and prohibitive cost categories. We use a threshold of 250, 500, 800, 1000 for each category, with a low cost representing less than 1km from any road, and not in steep ground. 
+
 ```{r}
 #| eval: false
 # define the input directories
@@ -176,7 +284,6 @@ bec = terra::rast(fs::path(PEMprepr::read_fid()$dir_201010_inputs$path_rel, "25m
 binned_landscape = terra::rast(fs::path(PEMprepr::read_fid()$dir_201010_inputs$path_rel, "25m", "modules", "landscape_binned.tif"))
 acost <- terra::rast(fs::path(sampleplan_dir, "acost.tif" ))
 
-
 # check how the costs are distributed across BEC zones to determine viability 
 ck <- classify_bgc_cost( bec, binned_landscape, acost)
 
@@ -184,10 +291,29 @@ ggplot2::ggplot(ck, ggplot2::aes(landscape, fill = cost_code)) +
   ggplot2::geom_histogram(bins = 30) +
   ggplot2::facet_wrap(~MAP_LABEL)
 
+```
+
+
+# Generate cost penalty
+
+In addition to the basic cost layer, there are portions of the landscape we don’t want to put transects, but we want to ensure the environmental space is included in the model. To do this we assign a high cost to the following areas: 1) recent cutblocks, 2) vri class1-2 and 3) vri class 3 , 4) fires and 5) private lands. The function currently allows for an arbitrary fixed cost to be assigned for the high an moderate cost (default is 3000 for high cost and 2500 for moderate (vri class3). There is also a parameter for percent values to be calculates as an alternate to a fixed cost values. This is based on 70% quantiles for the entire area for high cost and 65% for the moderate costs. 
+This places a higher cost on these areas as a consequence samples will be placed in equivalent environmental space of a lower cost. 
+We can use the create_cost_penalty() function to generate this layer
+Note each area of interest may required specific costs to be applied in addition to those listed above. This may include; 
+-	power line right of ways (Peter Hope), 
+-	area of high deciduous species in productive disturbed areas (i.e. Date Creek). 
+-	Mining / Coal mines? 
 
 
 
-# generate cost penalty
+3.3.1: High levels of deciduous species in productive disturbed areas
+
+At the Date Creek study area, high levels of deciduous vegetation exist in the lowest cost areas, this led to allocation of points within thick deciduous areas, not representative of the site series in the variant (i.e ICHmc2). To increase sampling efficiency, we can add a higher cost to areas mapped in the VRI with leading species of Deciduous (SPECIES_CD_1) is Aspen (AT), Paper bark Burch (EP). Coding for this is incorporated into the vector preparation script and stage 1 sampling script. 
+
+Note some sampling in these areas should be completed to ensure theses are captured in data collection 
+
+
+```{r}
 # assigns a higher cost to areas with various criteria
 
 vec_dir = fs::path(PEMprepr::read_fid()$dir_1010_vector$path_rel)
@@ -210,20 +336,29 @@ cost_penalty <- create_cost_penalty(vec_dir = vec_dir,
 
 terra::plot(cost_penalty)
 
-# create no sample areas
-# detemines the areas where samples will be excluded
+```
 
+
+# create no sample areas
+
+We generate a mask which will exclude some areas from being sampled. This includes permanently altered landscapes (roads), lakes, and limits sampling within the BEC variant of interest. Buffers of 175m and 150m respectively area applied to roads and other features to ensure placement of center clhs sample can be placed within the sample area and surrounding triangles will not extend past the bgc limits.  
+
+```{r}
 cost_masked <- create_cost_exclusion(vec_dir = vec_dir,
                                      cost = cost_penalty,
                                      buffer = 150,
                                      write_output = FALSE)
-
-
 terra::writeRaster(cost_masked,
                    fs::path(PEMprepr::read_fid()$dir_201010_inputs$path_rel,
                             "cost_final.tif"), overwrite = TRUE)
 
+```
 
+
+
+# Generate a BGC cost mask per BGC in map area
+
+```{r}
 # generate a BGC cost mask per BGC in map area
 
 out_dir <- fs::path(PEMprepr::read_fid()$dir_2010_standard$path_rel, "20_masks")
@@ -233,11 +368,12 @@ vec_dir = fs::path(PEMprepr::read_fid()$dir_1010_vector$path_rel)
 
 create_bgc_mask(vec_dir, cost_masked, out_dir = out_dir)
 
-
+```
 
 
 # Move files to the same folder (Note this might be redundant if needed)
 
+```{r}
 root_path <- fs::path(PEMprepr::read_fid()$dir_201010_inputs$path_rel)
 
 move_files <- function(root_path){
@@ -280,14 +416,20 @@ move_files(root_path)
 
 # Generate a sample plan
 
+For either road or helicopter based sampling we use the create_clhs() function. For each bec unit generate groups of sites in slices (n = 2-5, default is 5 sites per slice) using a cost constrained conditional sliced latin hyper cube design. 
+Required: 
+-	define the total number of sites required (a transect pair) and the number of sites per slice. 
+-	Number of sample plans to create (n = 10 default)
+ We iterate per BGC to generate multiple sample plans. 
+We generate multiple sample plans (default of 10) for each bgc unit in which the number of sites (total) and slices are defined. There is a check to ensure sample points are a minimum of 1000m apart to avoid any conflict between two sites. If this occurs the clhs is regenerated until the correct number of points without conflicts are generated. 
+We then select the clhs with the lowest cost, based on the sample cost (not travel cost). Check the sample plan selected using bing imagery to ensure no errors. It is very important to check the plan carefully particularly road access which is the highest cost in project and can substantially increase the time required to undertake field work. 
+
+
 ```{r}
 #| eval: false
-#remotes::install_github("ninoxconsulting/PEMprepr")
+
 library(PEMprepr)
-
-#remotes::install_github("ninoxconsulting/PEMsamplr", ref = "create_sampleplan")
 library(PEMsamplr)
-
 #devtools::install_github("kdaust/clhs")
 library(clhs)
 
@@ -309,7 +451,7 @@ all_cov <- terra::as.factor(all_cov)
 cost <- terra::rast(fs::path(landscape_dir, "cost_final.tif"))
 all_cov<- c(all_cov, cost)
 
-# check that the cavariates are factors (not needed for cost layer)
+# check that the covariates are factors (not needed for cost layer)
 #terra::is.factor(all_cov)
 
 
@@ -357,6 +499,57 @@ for(b in boi) {
 # plot each replicate per BEC zone 
 
 plot_clhs_cost(clhs_out_dir)
+
+```
+
+
+3.5.1: Select lowest cost sample plan
+
+To determine the final sample plan there are various methods to assess the “best option”. All of these will include some type of manual review. 
+Some options include
+1) select based on arithmetic lowest cost (see functions in PEMsamplr) – note this can be problematic as it might not reflect the entire cost
+2) Use a Vehicle routing problem to compare the sample plans. This process is currently under development (see below), and required future work to fine-tune. 
+
+3) Manually review sample plan. 
+Review the layout of sample plans to determine best option or combination of options where there are several BEC units to be samples in one stude areas. 
+Key features of checks to be reviewed include: 
+
+- is it in the BEC variant
+- too close to BEC lines (around 160m from edge) 
+- avoid private roads (ie might be gated) 
+- make sure of access (use imagery) roads, 
+- generate contours (10m scale ) none too steep  
+- slope (30% and 60%) 
+- within 1000m of road access.
+- Review with imagery (Bing equiv.) 
+
+
+Generate a full sample plan. 
+
+
+3.7. Generate paired transects
+
+For each clhs sample we generate 8 additional paired triangles based on compass direction. We select use the no sample mask to exclude triangles which fall predominantly in no sampling areas and then select the triangle with the lowest sample cost as the primary pair. 
+The output files are combined into a single geopakage and include for each BGCs - 
+•	Clhs points, clhs triangles, clhs buffered triangles
+•	Paired Points, paired triangles, paired buffered triangles
+•	All points, all triangles, all buffered triangles 
+•	List of all points as checklist 
+
+
+3.7.1 Site/Transect Labeling: 
+
+Each site consists of a central transect (_clhs) along with a paired transect drawn from a possible 8 options, based on cardinal points. 
+The central transect is labelled with  "_clhs“. The paired transects are labelled using the compass orientation (ie.”_E“,”_SW", etc.). Of the 8 possible combinations a paired transects has been selected.  For example the site below is labelled 
+For example the site below is IDF dk3_2.3.8. The central transect is labelled IDF dk3_2.3.8_clhs and the selected paired is IDF dk3_2.3.8_SE. These are marked with red on the map. 
+
+Sampling should include the clhs site, however the second paired site can be substituted if the site conditions are not suitable. For this reason maps of all possible points are included. 
+Conditional latin hypercube was used to generate sample points. We used an iterative method which generates “slices” which represent environmental space. Each “slice” consists of five samples. 
+The number of slices varies depending on the total number of samples required. Samples are named according to their variant, the cLHS slice, the sample within each slice (5 maximum) and the total number of samples per variant.
+For example “IDF dk3_2.3.8_SE.” is IDF dk3 variant, slice 2, transect sample 3, and total consecutive sample is 8. This is the SE transect in this site. 
+
+
+```{r}
 
 # After a review, we need to select a sample plan for each BEC zone. This is 
 # usually the plan with the lowest cost. This will be the input to generate the 

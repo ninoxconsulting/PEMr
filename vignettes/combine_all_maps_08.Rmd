@@ -18,18 +18,20 @@ knitr::opts_chunk$set(
 library(PEMr)
 ```
 
+
+# Combine all maps. 
+
+Once each of the maps have been generated we can combine them into a single map.
+The forest/non-forest map is used as a mask to determine which parts of the map will be "filled in" with the forested map and which are "filled in" with the non-forest map.
+
+The final output map is saved to the defined output directory and name. 
+
+
 ```{r, eval = FALSE}
-
-#remotes::install_github("ninoxconsulting/PEMprepr")
-library(PEMprepr)
-
-#remotes::install_github("ninoxconsulting/PEMsamplr", ref = "create_sampleplan_sub")
-library(PEMsamplr)
-
-# get the model directory
+#| eval: false
 
 # fnf model and response key
-fnf_dir <- fs::path(PEMprepr::read_fid()$dir_3020_draft$path_rel, "10_fnf","fnf","map")
+fnf_dir <- fs::path(PEMprepr::read_fid()$dir_3020_draft$path_rel, "10_fnf", "fnf", "map")
 fnf_map <- terra::rast(fs::path(fnf_dir, "best_map.tif"))
 fnf_key <- read.csv(fs::path(fnf_dir, "response_names.csv"))
 
@@ -40,7 +42,7 @@ f_key <- read.csv(fs::path(f_dir, "response_key.csv"))
 
 
 # non-forest model and response key
-nf_dir <- fs::path(PEMprepr::read_fid()$dir_3020_draft$path_rel, "30_nf", "nf","map")
+nf_dir <- fs::path(PEMprepr::read_fid()$dir_3020_draft$path_rel, "30_nf", "nf", "map")
 nf_map <- terra::rast(fs::path(nf_dir, "best_map.tif"))
 nf_key <- read.csv(fs::path(nf_dir, "response_names.csv"))
 
@@ -48,12 +50,10 @@ nf_key <- read.csv(fs::path(nf_dir, "response_names.csv"))
 out_dir <- fs::path(PEMprepr::read_fid()$dir_3020_draft$path_rel)
 outname <- "full_map.tif"
 
-
-final_map(fnf_map, fnf_key, f_map, f_key,  nf_map,  nf_key,
-          out_dir,  outname = "full_map.tif")
-
-# mask the forest out of non-forest map and update key
-
+final_map(
+  fnf_map, fnf_key, f_map, f_key, nf_map, nf_key,
+  out_dir, outname
+)
 
 
 ```
