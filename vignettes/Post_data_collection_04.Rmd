@@ -21,15 +21,21 @@ library(PEMr)
 
 # Post Fieldwork data processing 
 
-```{r, eval = FALSE}
-
+```{r}
+#| eval: false
 # read in the raw field data and prepare it for PEM analysis
 
 # note this section is still in development branch 
 remotes::install_github("ninoxconsulting/PEMsamplr", ref = "create_sampleplan_sub")
 library(PEMsamplr)
 
+```
 
+
+Firstly we will generate a transect layout with all transects using the function generate_transectlayout()
+
+```{r, eval = FALSE}
+#| eval: false
 # set up folder paths
 
 # location of final s1_sample plan / gpkg + where transect_layout will reside
@@ -39,32 +45,47 @@ input_path <- PEMprepr::read_fid()$dir_20104020_transect$path_rel
 # location where the final simplified transect layer will be stored
 out_dir = PEMprepr::read_fid()$dir_201040_plan_final$path_rel
 
-
-
-
 # generate simple transect plan layer
 transect_layout <- simplify_transectlayout(input_path, 
                                            out_dir, 
                                            write_output = FALSE, 
                                            overwrite = FALSE)
 
+```
 
+
+
+```{r}
+#| eval: false
 # for test aoi - prepared field data
-
 # read in the prepped transect layout and buffer
 transect_layout <- sf::st_read(fs::path(out_dir, "transect_layout_date_creek_demo.gpkg"))
 
+```
+
+#  process Raw field data 
+
+5.1.2 Format field data: 
+
+The format_fielddata() function is used to standardize and consolidate field data. This runs a number of checks including: 
+-	mandatory fields are present
+-	Format date/times
+-	Format Transect names by intersection with transects layer above
+-	Fill missing observers 
+-	Check all mandatory data is included
+-	Assign data type (s1 – standard sample 1, and incidentals) 
+The script will provide messages where data fails to meet requirements or needs more edits before the data can be consolidated. 
+This should be an iterative process in which the user runs the function, checks for errors , corrects and re-runs until it can be consolidated. 
+The final attribute data set is included in Table 7. 
 
 
-
-##### process Raw field data 
-
+```{r}
+#| eval: false
 # location of the raw field data
 rawdat <- PEMprepr::read_fid()$dir_20105010_raw_field_data$path_rel
 
 #location where cleaned data will be stored
 cleandat <- PEMprepr::read_fid()$dir_20105020_clean_field_data$path_rel
-
 
 # import and clean field data
 points <- format_fielddata(rawdat,
@@ -75,7 +96,16 @@ points <- format_fielddata(rawdat,
   out_name = "s1_points_raw.gpkg"
 )
 
+```
 
+
+5.1.3 Format tracklog  
+
+In addition to training point, we consolidate all track logs which are used for QA reference using the function: format_tracklog() . this will compile all tracklogs to together into a single geopackage that can be used for 
+
+
+```{r}
+#| eval: false
 # format tracklog (optional)
 tracks <- format_tracklog(rawdat,
   transect_layout,
@@ -85,23 +115,32 @@ tracks <- format_tracklog(rawdat,
   out_name = "s1_track_raw.gpkg"
 )
 
+```
 
 
+# generate mapkey
+
+```{r}
+#| eval: false
 # check and clean up field data names
 key <- generate_mapkey(
   data_pts  = fs::path(PEMprepr::read_fid()$dir_20105020_clean_field_data$path_rel, "s1_points_raw.gpkg"),
   write_output = TRUE,
-  out_dir = fs::path(PEMprepr::read_fid()$dir_30_model$path_rel)),
+  out_dir = fs::path(PEMprepr::read_fid()$dir_30_model$path_rel),
   out_name = "mapunitkey.csv"
 )
+
+```
 
 
 
 # Manually review the generated basemap key file (mapunit.key) and add missing
 # basemapunit calls if needed.
 
+Once the point data has been reviewed we use the make_lines() to attribute the lines between each of the points. This is based on the order attribute and can also be used to check that the points are in logical order. 
 
-
+```{r}
+#| eval: false
 # convert the points data to cleaned points to line segments
 processed_transects <- make_lines(
   points = points,
@@ -113,7 +152,21 @@ processed_transects <- make_lines(
   out_name = "proc_s1_transects5.gpkg"
 )
 
+```
 
+5.2.2. Convert line segments to points 
+
+The first step in the process is to convert the line segments to points in the matching raster which we are using. We use the convert_lines_pts() function to create a point file that contains all the values of lines within the template of the raster. 
+Note this will result in some points being attributed outside the space of the lines and will be addressed with the spatial misregistration and neighbourhood calculation accuracy metrics. 
+
+
+5.2.3. Add neighbouring cells
+
+Use add_neighbours() function will add all the values on the adjoining cells (ie: all surrounding cells). These are labelled “Orig” for original cell and “Adj” for all adjacent cells. Each pixal is attributed by an ID column to enable for inclusion or exclusion of neighbours in future calculations. 
+
+
+```{r}
+#| eval: false
 # convert pt to lines (2 options here)
 # 1. convert points to lines - no neighbours
 processed_pts <- convert_lines_pts(
@@ -138,29 +191,39 @@ pp <- convert_lines_pts(
   out_name = "allpoints_n.gpkg"
 )
 
+```
 
-# attribute the points with covariates
 
+
+5.2.4. Attribute all points 
+
+Once we have all the training point data prepped, we can attribute with all the rasters within the given resolution. Ie: 5m as default.
+We use the attribute_points() function which will intersect each point with a terra stack. This function points to filepath, so ensure that all rasters within the stack are aligned and also required for the analysis. 
+
+
+```{r}
+#| eval: false
 att_pts <- attribute_points(
   data_pts = processed_pts,
   cov_dir = fs::path(PEMprepr::read_fid()$dir_1020_covariates$path_rel, "5m"),
   write_output = FALSE,
   out_dir = fs::path(PEMprepr::read_fid()$dir_20105030_attributed_field_data$path_rel),
   out_name = "allpoints_att.gpkg")
+```
 
 
 ## generate a covariate key file
-
-remotes::install_github("ninoxconsulting/PEMmodelr", ref = "prep_training_data")
-library(PEMmodelr)
-
-generate_covar_key(att_pts, overwrite = TRUE)
 
 
 # manually check the key and assign the correct covariate type to each column
 
 
+```{r}
+#| eval: false
+remotes::install_github("ninoxconsulting/PEMmodelr", ref = "prep_training_data")
+library(PEMmodelr)
 
+generate_covar_key(att_pts, overwrite = TRUE)
 
 ```
 
