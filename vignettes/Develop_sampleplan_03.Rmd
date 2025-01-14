@@ -196,6 +196,7 @@ A function has been build to check the basics for the road layer used, however t
 
 
 ```{r}
+#| eval: false
 # download roads layer and run through standard checks
 
 out_dir <- PEMprepr::read_fid()$dir_201010_inputs$path_abs
@@ -246,6 +247,7 @@ sf::st_write(start, fs::path(out_dir, "start.gpkg"), append = FALSE)
 # Generate cost layer
 
 ```{r}
+#| eval: false
 ## Generate the cost layer - need to review these two scripts and decided which method to use. 
 ## These can be run as stand alone scripts and are located here: 
 
@@ -314,6 +316,7 @@ Note some sampling in these areas should be completed to ensure theses are captu
 
 
 ```{r}
+#| eval: false
 # assigns a higher cost to areas with various criteria
 
 vec_dir = fs::path(PEMprepr::read_fid()$dir_1010_vector$path_rel)
@@ -344,6 +347,7 @@ terra::plot(cost_penalty)
 We generate a mask which will exclude some areas from being sampled. This includes permanently altered landscapes (roads), lakes, and limits sampling within the BEC variant of interest. Buffers of 175m and 150m respectively area applied to roads and other features to ensure placement of center clhs sample can be placed within the sample area and surrounding triangles will not extend past the bgc limits.  
 
 ```{r}
+#| eval: false
 cost_masked <- create_cost_exclusion(vec_dir = vec_dir,
                                      cost = cost_penalty,
                                      buffer = 150,
@@ -359,6 +363,7 @@ terra::writeRaster(cost_masked,
 # Generate a BGC cost mask per BGC in map area
 
 ```{r}
+#| eval: false
 # generate a BGC cost mask per BGC in map area
 
 out_dir <- fs::path(PEMprepr::read_fid()$dir_2010_standard$path_rel, "20_masks")
@@ -374,6 +379,7 @@ create_bgc_mask(vec_dir, cost_masked, out_dir = out_dir)
 # Move files to the same folder (Note this might be redundant if needed)
 
 ```{r}
+#| eval: false
 root_path <- fs::path(PEMprepr::read_fid()$dir_201010_inputs$path_rel)
 
 move_files <- function(root_path){
@@ -550,7 +556,7 @@ For example “IDF dk3_2.3.8_SE.” is IDF dk3 variant, slice 2, transect sample
 
 
 ```{r}
-
+#| eval: false
 # After a review, we need to select a sample plan for each BEC zone. This is 
 # usually the plan with the lowest cost. This will be the input to generate the 
 # full sample plan. 

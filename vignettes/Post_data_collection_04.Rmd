@@ -22,6 +22,7 @@ library(PEMr)
 # Post Fieldwork data processing 
 
 ```{r}
+#| eval: false
 # read in the raw field data and prepare it for PEM analysis
 
 # note this section is still in development branch 
@@ -34,6 +35,7 @@ library(PEMsamplr)
 Firstly we will generate a transect layout with all transects using the function generate_transectlayout()
 
 ```{r, eval = FALSE}
+#| eval: false
 # set up folder paths
 
 # location of final s1_sample plan / gpkg + where transect_layout will reside
@@ -54,13 +56,12 @@ transect_layout <- simplify_transectlayout(input_path,
 
 
 ```{r}
+#| eval: false
 # for test aoi - prepared field data
 # read in the prepped transect layout and buffer
 transect_layout <- sf::st_read(fs::path(out_dir, "transect_layout_date_creek_demo.gpkg"))
 
 ```
-
-
 
 #  process Raw field data 
 
@@ -79,6 +80,7 @@ The final attribute data set is included in Table 7.
 
 
 ```{r}
+#| eval: false
 # location of the raw field data
 rawdat <- PEMprepr::read_fid()$dir_20105010_raw_field_data$path_rel
 
@@ -103,6 +105,7 @@ In addition to training point, we consolidate all track logs which are used for 
 
 
 ```{r}
+#| eval: false
 # format tracklog (optional)
 tracks <- format_tracklog(rawdat,
   transect_layout,
@@ -118,14 +121,14 @@ tracks <- format_tracklog(rawdat,
 # generate mapkey
 
 ```{r}
+#| eval: false
 # check and clean up field data names
 key <- generate_mapkey(
   data_pts  = fs::path(PEMprepr::read_fid()$dir_20105020_clean_field_data$path_rel, "s1_points_raw.gpkg"),
   write_output = TRUE,
-  out_dir = fs::path(PEMprepr::read_fid()$dir_30_model$path_rel)),
+  out_dir = fs::path(PEMprepr::read_fid()$dir_30_model$path_rel),
   out_name = "mapunitkey.csv"
 )
-
 
 ```
 
@@ -137,6 +140,7 @@ key <- generate_mapkey(
 Once the point data has been reviewed we use the make_lines() to attribute the lines between each of the points. This is based on the order attribute and can also be used to check that the points are in logical order. 
 
 ```{r}
+#| eval: false
 # convert the points data to cleaned points to line segments
 processed_transects <- make_lines(
   points = points,
@@ -150,7 +154,6 @@ processed_transects <- make_lines(
 
 ```
 
-
 5.2.2. Convert line segments to points 
 
 The first step in the process is to convert the line segments to points in the matching raster which we are using. We use the convert_lines_pts() function to create a point file that contains all the values of lines within the template of the raster. 
@@ -163,7 +166,7 @@ Use add_neighbours() function will add all the values on the adjoining cells (ie
 
 
 ```{r}
-
+#| eval: false
 # convert pt to lines (2 options here)
 # 1. convert points to lines - no neighbours
 processed_pts <- convert_lines_pts(
@@ -199,6 +202,7 @@ We use the attribute_points() function which will intersect each point with a te
 
 
 ```{r}
+#| eval: false
 att_pts <- attribute_points(
   data_pts = processed_pts,
   cov_dir = fs::path(PEMprepr::read_fid()$dir_1020_covariates$path_rel, "5m"),
@@ -215,19 +219,11 @@ att_pts <- attribute_points(
 
 
 ```{r}
+#| eval: false
 remotes::install_github("ninoxconsulting/PEMmodelr", ref = "prep_training_data")
 library(PEMmodelr)
 
 generate_covar_key(att_pts, overwrite = TRUE)
-
-```
-
-
-
-
-
-
-
 
 ```
 
