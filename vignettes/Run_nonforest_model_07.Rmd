@@ -18,29 +18,25 @@ knitr::opts_chunk$set(
 library(PEMr)
 ```
 
-```{r, eval = FALSE}
 
-#remotes::install_github("ninoxconsulting/PEMprepr")
-library(PEMprepr)
+# Generate Non-Forest model
 
-#remotes::install_github("ninoxconsulting/PEMsamplr", ref = "create_sampleplan_sub")
-library(PEMsamplr)
+This workflow produces a model for non-forest groupings. As the sample design was specifically designed for forested landscapes this workflow provides a very basic non-forest model. This could be substituted with other non-forest mapping products
 
-remotes::install_github("ninoxconsulting/PEMmodelr", ref = "prep_training_data")
-library(PEMmodelr)
+We provide this workflow as a placeholder for non-forest mapping products.
 
 
-############################
-## 1 prep non_forest model
-############################
+## 1.1 prep all training points
 
-# This is a placeholder script to run a version of the non-forest model. This can be substituted with
-# other non-forest mapping products.
+Prepare training points for using the attribute "mapunit_nf" in the mapkey.csv. This differs to the forest only mapping. 
+
+As previously we will generate a full list of covariates. 
+
+```{r}
+#| eval: false
 
 out_dir = fs::path(PEMprepr::read_fid()$dir_3020_draft$path_rel, "30_nf")
 covarkey = read.csv(fs::path(PEMprepr::read_fid()$dir_30_model$path_rel,"covar_key.csv"))
-
-## 1.1 prep all training points
 
 tpts <- prep_tps(
   allpts = sf::st_read(fs::path(PEMprepr::read_fid()$dir_20105030_attributed_field_data$path_rel, "allpoints_att.gpkg")),
@@ -54,6 +50,7 @@ core_names  <- covarkey |>
   dplyr::filter(type == "core") |>
   dplyr::select(value) |> dplyr::pull()
 
+
 # get full list of covariates
 mcols <- names(tpts)[!names(tpts) %in% c(core_names)]
 saveRDS(mcols, fs::path(out_dir, "full_covariate_list.rds"))
@@ -65,23 +62,38 @@ tpts <- cbind(tpts, as.data.frame(sf::st_coordinates(tpts))) |>
 
 write.csv(tpts, fs::path(out_dir, "training_pts.csv"), row.names = FALSE)
 
-
-
-# 1.2 generate a fuzzy matric for the model..
-
-# Might not need this as "nonforest and forest cross over = 0"
-
-# should still generate this for the model
+```
 
 
 
+## 1.2) Generate a fuzzy matrix. 
+
+To assist in accuracy assessment we need to generate a fuzzy metrics. This provides a list of all mapunits  we need to create a table which assigns partial correct values for mapunit calls that are similar (on the edatopic position) to the correct calls. In this case, scores could be awarded for on a sliding scale from 1 (Correct) to 0 (nowhere close) with partial credit assigned to closely related mapunits. Note this requires a matrix which specifies the similarity between all combinations of possible calls. 
+
+The final output is a list of all mapunits within the tpts$mapunit1 column and cross reference with all other units with an equivalent value between 0 and 1. The dataframe consists of three columns: target, Pred, f. 
+
+Note for this model the types include non-forest so we have a simple fuzzy matrix. Might not need this as "nonforest and forest cross over = 0"
+
+```{r}
+#| eval: false
+#| 
+# this is currently a placeholder that Claire is working on.
+# it is possible to use the existing fuzzy_matrix.csv files until this is completed
+
+#fuzzy_matrix <- read.csv(fs::path("fuzzy_matrix.csv" ))
+#utils::write.csv(fuzzy_matrix, fs::path(out_dir, "fuzzy_matrix.csv"), row.names = FALSE)
+
+```
 
 
+## 1.3)  Recursive Feature selection / Correlated variable reduction
 
+To improve the interpretability of the models, we can firstly remove the correlated covariates. While there are several methods available to complete this task we chose a simple correlation matrix with a cutoff values of 0.9.  This is based on the entire raster surface (not just the points). The cutoff parameters can be adjusted. 
 
-## 1.3 Recursive Feature selection / Correlated variable reduction
-# Requires only one run, not per BGC
+In the forest/non-forest models we also use the covariates grouped as "dem",  "structure" and "satellite".
 
+```{r}
+#| eval: false
 mcols <- readRDS(fs::path(out_dir, "full_covariate_list.rds"))
 
 reduced_vars <- reduce_features(mcols,
@@ -91,11 +103,14 @@ reduced_vars <- reduce_features(mcols,
                                 cutoff = 0.90)
 
 write.csv(reduced_vars, fs::path(out_dir, "reduced_covariate_list.csv"), row.names = FALSE)
+```
 
 
 
-## 1.4)  prepare training points for model run.
+## 1.4) prepare the training point models (fnf)
 
+```{r}
+#| eval: false
 
 tpts <- read.csv(fs::path(out_dir, "training_pts.csv"))
 
@@ -106,9 +121,14 @@ model_bgc <- prep_model_tps(
   out_dir = out_dir
 )
 
+```
+
 
 # 1.5) determine optimum parameters for the model
 
+We use only the original data points (not the neighbours) and pure calls to tune the model hyperparameters. This includes estimating mtry and min_n to use for the models. Best accuracy is determined based on the roc_auc and accuracy metrics. We can also plot the each is exported to enable more assessment of best options. 
+```{r}
+#| eval: false
 
 tune_bgc <- tune_model_params(
   prepped_points = model_bgc,
@@ -119,16 +139,17 @@ tune_bgc <- tune_model_params(
   accuracy_type = "roc_auc"
 )
 
+```
 
-######################
-# 3) Run base model
-######################
+## 2) Run the base model
 
+```{r}
+#| eval: false
 out_dir = fs::path(PEMprepr::read_fid()$dir_3020_draft$path_rel, "30_nf")
 
 bgc_pts_subzone <- readRDS(fs::path(out_dir, "model_input_pts.rds"))
 
-fmat <- read.csv(file.path(out_dir, "fuzzy_matrix.csv" )) |>
+fuzz_matrix <- read.csv(file.path(out_dir, "fuzzy_matrix.csv" )) |>
   dplyr::select(target, Pred, fVal)
 
 covars = read.csv(fs::path(out_dir, "reduced_covariate_list.csv")) |> dplyr::pull()
@@ -137,12 +158,14 @@ covars = read.csv(fs::path(out_dir, "reduced_covariate_list.csv")) |> dplyr::pul
 ## Run base model
 run_base_model(
   bgc_pts_subzone = bgc_pts_subzone,
-  fmat = fmat,
+  fuzz_matrix = fuzz_matrix,
   covars = covars,
   use_neighbours = FALSE,
   detailed_output = TRUE,
   out_dir = out_dir)
 
+
+```
 
 
 ######################
@@ -154,15 +177,12 @@ run_base_model(
 
 
 
+# 4) Run final model
 
+In this example we use the base model as the final model. This could also be a balanced option. 
 
-
-
-
-######################
-# 4) Run final model  - forest and non forest
-######################
-
+```{r}
+#| eval: false
 
 out_dir = fs::path(PEMprepr::read_fid()$dir_3020_draft$path_rel, "30_nf")
 train_data <- readRDS(fs::path(out_dir, "model_input_pts.rds"))
@@ -171,16 +191,17 @@ covars <- read.csv(fs::path(out_dir, "reduced_covariate_list.csv")) |> dplyr::pu
 
 final_mod <- run_final_model(train_data,
                              covars,
-                             ds_ratio = NA,
-                             sm_ratio = NA,
-                             mname = "base",
+                             model_bal = "base",
                              report = FALSE,
                              out_dir = out_dir)
 
+```
 
-######################
-# 4) Predict maps
-######################
+
+# 5) Predict maps
+
+```{r}
+#| eval: false
 
 model_dir = fs::path(PEMprepr::read_fid()$dir_3020_draft$path_rel, "30_nf")
 covars = read.csv(fs::path(model_dir, "reduced_covariate_list.csv")) |>  dplyr::pull()
@@ -188,18 +209,16 @@ cov_dir = fs::path(PEMprepr::read_fid()$dir_1020_covariates$path_rel, "5m")
 tile_dir = fs::path(PEMprepr::read_fid()$dir_30_model$path_rel,"tiles")
 bec_shp <- sf::st_read(fs::path(PEMprepr::read_fid()$dir_1010_vector$path_rel,"bec.gpkg"), quiet = TRUE)
 
-
 run_predict_map(
   model_type = "nf",
   model_dir = model_dir,
+  model_name = "final_model_base.rds",
   covars = covars,
   cov_dir = cov_dir,
   tile_dir = tile_dir,
   bec_shp = bec_shp
 )
-
-
-
-
 ```
+
+
 

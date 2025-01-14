@@ -279,7 +279,6 @@ In this example we use the reduced covariate list however the full covariate lis
 
 
 ```{r}
-
 #| eval: false
 
 model_dir = fs::path(PEMprepr::read_fid()$dir_3020_draft$path_rel, "20_f")
@@ -288,10 +287,10 @@ cov_dir = fs::path(PEMprepr::read_fid()$dir_1020_covariates$path_rel, "5m")
 tile_dir = fs::path(PEMprepr::read_fid()$dir_30_model$path_rel,"tiles")
 bec_shp <- sf::st_read(fs::path(PEMprepr::read_fid()$dir_1010_vector$path_rel,"bec.gpkg"), quiet = TRUE)
 
-
 run_predict_map(
   model_type = "f",
   model_dir = model_dir,
+  model_name = "final_model_base.rds",
   covars = covars,
   cov_dir = cov_dir,
   tile_dir = tile_dir,
@@ -384,7 +383,6 @@ This is an optional step for more detailed outputs.
 
 
 ```{r}
-
 #| eval: false
 
 out_dir = fs::path(PEMprepr::read_fid()$dir_3020_draft$path_rel, "20_f")
@@ -420,7 +418,6 @@ The options available include: c( "aspat_paf_theta.5" ,"aspat_paf_theta0" ,
 
 
 ```{r}
-
 #| eval: false
 
 out_dir = fs::path(PEMprepr::read_fid()$dir_3020_draft$path_rel, "20_f")
