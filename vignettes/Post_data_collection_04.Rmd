@@ -1,8 +1,8 @@
 ---
-title: "Post_data_collection"
+title: "Post_data_collection_04"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Post_data_collection}
+  %\VignetteIndexEntry{Post_data_collection_04}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---

@@ -1,0 +1,474 @@
+---
+title: "Run_forest_model_05"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Run_forest_model_05}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+#| eval: false
+
+remotes::install_github("ninoxconsulting/PEMmodelr", ref = "prep_training_data")
+library(PEMr)
+
+```
+
+
+# Overall Model Workflow. 
+
+To optimise the accuracy of modelling (and final map) for both forested and non-forested areas with the study area, we use a three part workflow to build the final map. We will build up to three separate components and then assemble the maps. This is required to both improve accuracy and address challenged in which set of covariates can be used to model forest vs non-forest mapunits. 
+
+Broadly we will 
+1)  Build a forest / non-forest model and map. This will provide a mask to differentiate areas  between forest and non-forest regions.
+
+2) Build a forest model per BGC variant and assemble to a single forested layer. As this is the focus of PEM modelling this modelling component provides the most detailed model build parameters and additional methodology 
+
+3) Build a non-forest model for the entire study area. This methodology is similar to forested workflow and can be replaces with other non-forest mapping products.
+
+
+
+
+## Run the forest model
+
+As the forest model is the primary research focus of this mapping process this will be the most detailed and require input in decision making to maximize the accuracy for intended purpose. 
+
+## 1) Prepare training data and required inputs for modelling
+
+The first step is to prepare the training data for the model. This includes the following steps:
+1) convert prepared points to a csv file named training_pts.csv
+2) generate a full covariate list as an RDS object
+
+
+Note the attribute listed in the prep_tps function should be the attribute within the mapkey to which the raw fieldcalls will be matched. For forested maps this is typically the mapunit_ss_realm, however users can specify their own column if required.
+
+If an error occurs is it worthwhile testing if the min_no is too low and increasing this value. A minimum of 20 appear to be a good starting point.
+
+
+```{r}
+#| eval: false
+#might want to generate a subfolder here but keeping it at root level for now
+
+out_dir = fs::path(PEMprepr::read_fid()$dir_3020_draft$path_rel, "20_f")
+covarkey = read.csv(fs::path(PEMprepr::read_fid()$dir_30_model$path_rel,"covar_key.csv"))
+
+
+## 1.1 prep all training points
+
+tpts <- prep_tps(
+  allpts = sf::st_read(fs::path(PEMprepr::read_fid()$dir_20105030_attributed_field_data$path_rel, "allpoints_att.gpkg")),
+  mapkey = read.csv(fs::path(PEMprepr::read_fid()$dir_30_model$path_abs,"mapunitkey_final.csv")),
+  covarkey = covarkey,
+  attribute = "mapunit_ss_realm",
+  bec = sf::st_read(fs::path(PEMprepr::read_fid()$dir_1010_vector$path_rel, "bec.gpkg")),
+  min_no = 20)
+
+
+## generate a full list of covariates 
+
+core_names  <- covarkey |>
+  dplyr::filter(type == "core") |>
+  dplyr::select(value) |> dplyr::pull()
+
+mcols <- names(tpts)[!names(tpts) %in% c(core_names)]
+saveRDS(mcols, fs::path(out_dir, "full_covariate_list.rds"))
+
+
+# convert training points file to csv
+
+tpts <- cbind(tpts, as.data.frame(sf::st_coordinates(tpts))) |>
+  sf::st_drop_geometry()
+
+write.csv(tpts, fs::path(out_dir, "training_pts.csv"), row.names = FALSE)
+
+```
+
+
+1.2) Generate a fuzzy matrix. 
+
+To assist in accuracy assessment we need to generate a fuzzy metrics. This provides a list of all mapunits  we need to create a table which assigns partial correct values for mapunit calls that are similar (on the edatopic position) to the correct calls. In this case, scores could be awarded for on a sliding scale from 1 (Correct) to 0 (nowhere close) with partial credit assigned to closely related mapunits. Note this requires a matrix which specifies the similarity between all combinations of possible calls. 
+
+The final output is a list of all mapunits within the tpts$mapunit1 column and cross reference with all other units with an equivalent value between 0 and 1. The dataframe consists of three columns: target, Pred, f. 
+
+```{r}
+#| eval: false
+#| 
+# this is currently a placeholder that Claire is working on.
+# it is possible to use the existing fuzzy_matrix.csv files until this is completed
+
+#fuzzy_matrix <- read.csv(fs::path("fuzzy_matrix.csv" ))
+#utils::write.csv(fuzzy_matrix, fs::path(out_dir, "fuzzy_matrix.csv"), row.names = FALSE)
+
+```
+
+
+
+1.3)  Recursive Feature selection / Correlated variable reduction
+
+To improve the interpretability of the models, we can firstly remove the correlated covariates. While there are several methods available to complete this task we chose a simple correlation matrix with a cutoff values of 0.9.  This is based on the entire raster surface (not just the points). The cuttoff parameters can be adjusted. 
+
+```{r}
+#| eval: false
+
+mcols <- readRDS(fs::path(out_dir, "full_covariate_list.rds"))
+
+reduced_vars <- reduce_features(mcols,
+                                covar_dir = fs::path(PEMprepr::read_fid()$dir_1020_covariates$path_rel, "5m"),
+                                covarkey = covarkey,
+                                covtype = c("dem"),
+                                cutoff = 0.90)
+
+write.csv(reduced_vars, fs::path(out_dir, "reduced_covariate_list.csv"), row.names = FALSE)
+
+```
+
+
+
+## 1.4) prepare the training point models per BEC.
+
+Once we have a reduced covariate list we prepare training points by splitting them into a list of points per bgc (or forest or non-forest) for the next steps in the process. This will also create a subfolder per BGC unit into which the model appropraite information will be contained. 
+
+```{r}
+#| eval: false
+
+tpts <- read.csv( fs::path(out_dir, "training_pts.csv"))
+
+model_bgc <- prep_model_tps(
+  prepped_points = tpts,
+  covars = reduced_vars,
+  model_type = "f",
+  outname = "model_input_pts.rds",
+  out_dir = out_dir
+)
+
+```
+
+
+
+# 1.5) Determine optimum parameters for the model
+
+We use only the original data points (not the neighbours) and pure calls to tune the model hyperparameters. This includes estimating mtry and min_n to use for the models. Best accuracy is determined based on the roc_auc and accuracy metrics. We can also plot the each is exported to enable more assessment of best options. 
+
+
+```{r}
+#| eval: false
+#| 
+tune_bgc <- tune_model_params(
+  prepped_points = model_bgc,
+  covars = reduced_vars,
+  min_no = 20,
+  out_dir = out_dir,
+  output_type = "best",
+  accuracy_type = "roc_auc"
+)
+
+# add message if failed to run increase the min_no value
+# add output as needed
+
+# if you full output is used you can also generate plots
+#
+# # best_tune <- select_best(tune_res, metric = "accuracy")
+# tune_res |>
+#   tune::collect_metrics()  |>
+#   dplyr::filter(.metric == "roc_auc")  |>
+#   dplyr::select(mean, min_n, mtry)  |>
+#   tidyr::pivot_longer(min_n:mtry,
+#                values_to = "value",
+#                names_to = "parameter"
+#   )  |>
+#   ggplot2::ggplot(ggplot2::aes(value, mean, color = parameter)) +
+#   ggplot2::geom_point(show.legend = FALSE) +
+#   ggplot2::facet_wrap(~parameter, scales = "free_x") +
+#   ggplot2::labs(x = NULL, y = "AUC")
+#
+# best_tune <- tune::select_best(tune_res, metric = "accuracy")
+#
+# write.csv(best_tune, file.path(fid$model_inputs0310[2], "best_tuning.csv"))
+#
+
+
+```
+
+
+
+## 2) Run the base model
+
+
+The model framework is based on an iterative leave-one-out process in which the accuracy estimates are generate by holding out one part of the data and then building and predicting with the other portion. Accuracy results are generated for each slice and uncertainty is estimated for the entire model. 
+Accuracy is based on iteration by slice, or by site, where slice numbers are low. 
+The rational for this is to reduce the need for a separate QA, and to improve uncertainty estimates of predictions. Each slice represents similar hypercube “space” and contains approximately 5 sites. For example stage 1 SBSmc2 at Deception includes 5 slices each with 5 sites = 25 sites or 50 triangles in total. 
+
+This provides; 
+1) confidence intervals around accuracy measures (based on 5 slices), 
+2) minimize “data leakage” between the test and training sets, 
+3) enables sites to be “blocked” to training and testing sets to prevent the model from training and testing on data from the same site (ie pair of transects). Cross validation is stratified by mapunit and grouped by site id. Test results are reported below.
+4) To ensure an accurate assessment we calculate the average weighted means and standard deviation based on the number of transects per slice. This accounts for sampling structure where there are uneven number of sites per slice. 
+
+
+The first step in model development is running a basic model where no balancing has been applied to the training points. This can provide a basic output, and can also be used to compare the impact of balancing to the basic model. The neighbors designates whether neighboring cells should be included in the model build. Detailed_outputs is not needed in this section, however will be used to calculate theta metrics in the next section. This model will generate a full accuracy assessment using the slices testing and training leave one out method as described above.   
+
+
+```{r}
+#| eval: false
+
+# designate the directory
+out_dir = fs::path(PEMprepr::read_fid()$dir_3020_draft$path_rel, "20_f")
+
+# read in data
+bgc_pts_subzone <- readRDS(fs::path(out_dir, "model_input_pts.rds"))
+
+# read in fuzzy matrix
+fmat <- read.csv(file.path(out_dir, "fuzzy_matrix.csv" )) |>
+  dplyr::select(target, Pred, fVal)
+
+# read in reduced covariate list 
+covars = read.csv(fs::path(out_dir, "reduced_covariate_list.csv")) |> dplyr::pull()
+
+
+## Run base model
+run_base_model(
+  bgc_pts_subzone = bgc_pts_subzone,
+  fuzz_matrix = fuzz_matrix,
+  covars = covars,
+  use_neighbours = FALSE,
+  detailed_output = TRUE,
+  out_dir = out_dir)
+
+```
+
+
+
+# 3) Run final model
+
+If we are looking for a simple unbalanced and base output we can use this model to generate a final fit. Note random forest are highly succeptable to imbalance in training points and these features will be discussed below. 
+
+The final fit uses all the data and does not use Leave-one-out process. 
+This can be run with the raw data (unbalanced) or with the balanced outputs. 
+
+```{r}
+#| eval: false
+
+out_dir = fs::path(PEMprepr::read_fid()$dir_3020_draft$path_rel, "20_f")
+train_data <- readRDS(fs::path(out_dir, "model_input_pts.rds"))
+covars <- read.csv(fs::path(out_dir, "reduced_covariate_list.csv")) |> dplyr::pull()
+
+final_mod <- run_final_model(train_data,
+                             covars,
+                             model_bal = "base",
+                             report = FALSE,
+                             out_dir = out_dir)
+
+```
+
+
+# 4) Predict maps
+
+We can use the final model fit to predict a forest map per BGC. This function applies to all model types (forest/nonforest, forest and non-forest) as controlled by model type. Model type "f" denotes that the map will be built from individual BGC models and stitched together. Models are predicted onto tiles with a default of 500m size. 
+
+A tile directory will be built and tiles generated on the first time the model is run. These tiles are used for each submodel. 
+
+In this example we use the reduced covariate list however the full covariate list can also be used. 
+
+
+```{r}
+#| eval: false
+
+model_dir = fs::path(PEMprepr::read_fid()$dir_3020_draft$path_rel, "20_f")
+covars = read.csv(fs::path(model_dir, "reduced_covariate_list.csv")) |>  dplyr::pull()
+cov_dir = fs::path(PEMprepr::read_fid()$dir_1020_covariates$path_rel, "5m")
+tile_dir = fs::path(PEMprepr::read_fid()$dir_30_model$path_rel,"tiles")
+bec_shp <- sf::st_read(fs::path(PEMprepr::read_fid()$dir_1010_vector$path_rel,"bec.gpkg"), quiet = TRUE)
+
+run_predict_map(
+  model_type = "f",
+  model_dir = model_dir,
+  model_name = "final_model_base.rds",
+  covars = covars,
+  cov_dir = cov_dir,
+  tile_dir = tile_dir,
+  bec_shp = bec_shp
+)
+
+```
+
+
+
+
+# 5) Advanced modelling options (OPTIONAL )
+
+While the above workflow provides a basic model fit, we can also use more advanced modelling options to improve the accuracy of the model. This includes balancing the training points and determining the optimum theta value for the model.
+
+
+# 5.1)  Determine optimum Theta value for the metric of choice
+
+While we generate values for theta at 0, 1, and 0.5, we can calculate the optimal theta value, that is then 75% of the values are about the threshold of 0.65 accuracy. 
+
+This relies on the output of the detailed output from the base model to regenerated. If this was set to FALSE, it might need to be regenerate. 
+
+The function below uses the detailed outputs to generate the values for each theta value (0.1 – 0.9) and then determine at which theta value is 75% of results are above 0.65 accuracy level. 
+
+The output of the function is a csv "compiled_theta_results.csv" which contains all accuracy metrics along with a summarised output csv ("theta_thresholds.csv") which specifies all theta values tested, the mean, 25 and 75 quartiles and which were above the threshold (TRUE/FALSE). These results are generated for each type (p - primary, pa - primary seconday, paf - primary, secondary, and fuzzy). 
+
+```{r}
+#| eval: false
+
+out_dir = fs::path(PEMprepr::read_fid()$dir_3020_draft$path_rel, "20_f")
+
+# read in data
+bgc_pts_subzone <- readRDS(fs::path(out_dir, "model_input_pts.rds"))
+
+# read in fuzzy matrix
+fuzz_matrix <- read.csv(file.path(out_dir, "fuzzy_matrix.csv" )) |>
+  dplyr::select(target, Pred, fVal)
+
+run_theta_metrics(bgc_pts_subzone, out_dir, fuzz_matrix, overwrite = TRUE)
+
+```
+
+
+
+# 5.2) Determine optimum Balance options for models
+
+Datasets can vary widely in the proportion of classes and representation within the entire dataset. While this will likely reflect in part the distribution of class types on the ground, it can impact overall accuracy, with highly imbalances datasets likely to under represent uncommon data classes. The advantage of balancing datasets is to decrease the overprediction of the major classes and increase the rate of predicting the minority classes. This impacts the overall accuracy measure measures. More details and testing in regards to balanceing can be found in Appendix 3. 
+We explored two method to assess the impact of balance on overall accuracy and map unit accuracy. This included:
+1) synthetic minority oversampling technique (SMOTE) to create pseudo data to inform under sampled units and 
+2) downsampling, a method to subsample the most common classes. 
+To determine the impact of balancing on individual variants we tested a number of options combining smoting and downsampling using the themis R package. In this package we build a model recipe in which we define a number of steps to preprocess the data and apply the model to the data set. These methods are used to adjust the ratio by which minority and majority classes are represented. 
+
+
+Balancing optimizing process
+
+To determine optimum smoting/downsampling parameters we apply all possible combinations of smoting and downsampling to a given input dataset (ie. Stage 1 sampling of  a particular BGC unit). The range of parameters tested in this method include downsampling on a ratio of 1-100 at 10 unit increments (10, 20, 30, 40, 50, 60, 70, 80, 90). For example selecting a downsample ratio of 50 will result in the majority class to be downsampled so the minority class is half as many as the majority level.
+Smoting parameters ranged from 0 – 1 with increments of 0.1 (i.e 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7,0.8,0.9). A value of 1 means all classes will be up sampled to equal number with the majority class, For example a value of 0.5 would mean that the minority levels will have (at most) (approximately) half as many rows than the majority level.
+We can use the function run_base_model() and balance_optimisation_iteration() to run all options and out a summary figure to determine the best option. The following balancing options are tested using this script. 
+run_base_model() : 
+1. Raw (no balancing applied) 
+balance_optimisation_iteration() 
+1.	down sample (under ratio = 0 - 100) (15, 20, 30, 40, 50, 60, 70, 80, 90).
+2.	smote (over ratio = 0 - 1), (i.e 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7,0.8,0.9).
+3.	downsample and smote combination (combination of both under/over ratios) ie: ds_50_sm_0.3 (downsample to 50% and upsmote to 0.3)
+For each of these 110 models we run the model using a leave one out approach to iterate over slices of data. This provided information about the range in confidence intervals for the entire data set. We also use this information to assess how over or under predicted each of the classes are for each model run. This will form the basis of selecting the optimum balancing parameters (see below for more details on assessment). 
+
+
+
+Practical considerations: 
+1. For data sets with less than 2 slices, we iterate by transect, rather than slice to provide uncertainty measures. 
+
+2. For classes that have very few samples, smoting is not possible. While we remove classes that have less than 10 units in the entire dataset, it can occur that a given slice has very few of a particular class, but the class is well represented across all sites. When this occurs in a particular slice used for the test data set we skip this slice. The unit however will be retained when it occurs in the training data set. The slice will be skipped and the iteration continues. 
+
+3. In some cases certain smoting or balancing options result in errors which are caused by too few points. In many of these cases we can remove the specific combination from the balancing optimization testing and continue with other options. This typically occurs for smote ratio = 0.1 – 0.3 or downsample at 10 and 15.
+3. Optimum balancing parameters will vary depending on the imbalanced nature of the data sets and should be run for each data set individually. 
+ 
+Selecting the optimum balance combination 
+
+Once all the balance options have been run we can determine the option with the best accuracy (based on various metrics). This uses the functions combine_balance_outputs() to combine all metrics and then select_best_acc() function to estimate the best balance. We use the deviation from the raw outputs (ie no balance) as a measure of improvement and include a percent difference 
+We generate these values for the following metrics for aspatial estimates: aspat_paf_theta.5, aspat_paf_theta0, aspat_paf_theta1, aspatial_sum and for spatial estimates : spat_paf_theta.5, spat_paf_theta0, spat_paf_theta1, spatial_sum. 
+
+We also generate best overall value which is a balance of both aspatial and spatial, in which the difference from raw is the best model combined. 
+This is output in as "best_balancing.csv" in the model inputs folder: 
+
+This shows the best balance option for each metric type (maxmetric) including the accuracy value (max) as compared to the raw, and the percent improvement for each bgc. This allows users to select the best balance as per the desired metric choice given the application of the map. We use overall as the default value as it balances both aspatial and spatial metrics. 
+
+
+Once the optimal balance metric is decided we can also generate the optimized theta for each of the Bec variants fo this specific balance level. To estimate theta values the model needs to be rerun with the full outputs. 
+This is an optional step for more detailed outputs. 
+
+
+```{r}
+#| eval: false
+
+out_dir = fs::path(PEMprepr::read_fid()$dir_3020_draft$path_rel, "20_f")
+
+fuzz_matrix <- read.csv(fs::path(out_dir , "fuzzy_matrix.csv" )) |>
+  dplyr::select(target, Pred, fVal)
+
+covars = read.csv(fs::path(out_dir , "reduced_covariate_list.csv")) |> dplyr::pull()
+# read in data
+bgc_pts_subzone <- readRDS(fs::path(out_dir , "model_input_pts.rds"))
+
+run_balance_optimisation(bgc_pts_subzone,
+                         fuzz_matrix,
+                         covars,
+                         out_dir,
+                         ds_iterations = c(10, 20,  30, 40, 50, 60, 70, 80, 90),
+                         smote_iterations = c(0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9),
+                         use_neighbours = FALSE)
+
+
+```
+
+
+
+
+# 5.3) Run the final model with the optimal balance
+
+Once we have gone though these steps and assessed the optimum balancing and theta for the desires accuracy measure we can can run the final model with the balance option. 
+
+The options available include: c( "aspat_paf_theta.5" ,"aspat_paf_theta0" ,
+"aspat_paf_theta1" , "aspatial_sum", "spat_paf_theta.5" , "spat_paf_theta0", "spat_paf_theta1",
+ "spatial_sum", "overall")
+
+
+```{r}
+#| eval: false
+
+out_dir = fs::path(PEMprepr::read_fid()$dir_3020_draft$path_rel, "20_f")
+
+fuzz_matrix <- read.csv(fs::path(out_dir , "fuzzy_matrix.csv" )) |>
+  dplyr::select(target, Pred, fVal)
+
+covars = read.csv(fs::path(out_dir , "reduced_covariate_list.csv")) |> dplyr::pull()
+
+bgc_pts_subzone <- readRDS(fs::path(out_dir , "model_input_pts.rds"))
+
+model_bal = "aspat_paf_theta0"
+
+# "aspat_paf_theta.5" ,"aspat_paf_theta0" ,
+# "aspat_paf_theta1" , "aspatial_sum", "spat_paf_theta.5" , "spat_paf_theta0", "spat_paf_theta1",
+#  "spatial_sum", "overall"
+
+run_final_model(
+  train_data = bgc_pts_subzone,
+  covars = covars,
+  model_bal = model_bal,
+  report = FALSE,
+  out_dir = out_dir,
+  ds_ratio = NA,
+  sm_ratio = NA
+)
+
+```
+
+
+# 5.4) Predict maps -  balanced model
+
+```{r}
+#| eval: false
+
+model_dir = fs::path(PEMprepr::read_fid()$dir_3020_draft$path_rel, "20_f")
+covars = read.csv(fs::path(model_dir, "reduced_covariate_list.csv")) |>  dplyr::pull()
+cov_dir = fs::path(PEMprepr::read_fid()$dir_1020_covariates$path_rel, "5m")
+tile_dir = fs::path(PEMprepr::read_fid()$dir_30_model$path_rel,"tiles")
+bec_shp = sf::st_read(fs::path(PEMprepr::read_fid()$dir_1010_vector$path_rel,"bec.gpkg"), quiet = TRUE)
+model_name = "final_model_aspat_paf_theta0.rds"
+
+run_predict_map(
+  model_type = "f",
+  model_dir = model_dir,
+  covars = covars,
+  cov_dir = cov_dir,
+  tile_dir = tile_dir,
+  bec_shp = bec_shp
+)
+
+
+```
+

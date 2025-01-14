@@ -1,8 +1,8 @@
 ---
-title: "combine_all_maps"
+title: "combine_all_maps_08"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{combine_all_maps}
+  %\VignetteIndexEntry{combine_all_maps_08}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---

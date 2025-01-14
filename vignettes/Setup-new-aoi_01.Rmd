@@ -1,8 +1,8 @@
 ---
-title: "Setup-new-aoi"
+title: "Setup-new-aoi_01"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Setup-new-aoi}
+  %\VignetteIndexEntry{Setup-new-aoi_01}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
