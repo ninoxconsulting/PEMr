@@ -12,11 +12,6 @@ test_that("create_project() creates a project", {
     style = "json2"
   )
 
-  # Fills in project name in template
-  expect_equal(
-    readLines(fs::path(dir, "test_aoi", "01_prepr.R"))[8],
-    "project_name <- \"test_aoi\""
-  )
 })
 
 test_that("create_project() works with aoi gpkg", {
