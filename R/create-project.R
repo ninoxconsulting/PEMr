@@ -52,10 +52,6 @@ create_pemr_project <- function(
   ## Add the project-specific infrastructure
   project_dirs <- create_directories()
 
-  write_core_files(
-    list(aoi_name = aoi_name)
-  )
-
   fid <- make_fid(project_dirs)
 
   aoi_dest_path <- fid$dir_0010_vector$path_abs
@@ -90,14 +86,6 @@ create_directories <- function(
 
   lapply(c(project_dirs, "_meta"), usethis::use_directory)
   project_dirs
-}
-
-write_core_files <- function(data) {
-  core_files <- list.files(fs::path_package("PEMr", "templates", "core"))
-  lapply(core_files, function(x) {
-    fpath <- fs::path("core", x)
-    usethis::use_template(fpath, x, data = data, package = "PEMr")
-  })
 }
 
 make_fid <- function(dirs) {
