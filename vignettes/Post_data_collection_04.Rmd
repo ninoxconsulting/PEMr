@@ -24,13 +24,12 @@ library(PEMr)
 ```{r}
 #| eval: false
 # read in the raw field data and prepare it for PEM analysis
-
-# note this section is still in development branch 
-remotes::install_github("ninoxconsulting/PEMsamplr", ref = "create_sampleplan_sub")
 library(PEMsamplr)
 
-```
+remotes::install_github("ninoxconsulting/PEMmodelr", ref = "prep_training_data")
+library(PEMmodelr)
 
+```
 
 Firstly we will generate a transect layout with all transects using the function generate_transectlayout()
 
@@ -54,6 +53,7 @@ transect_layout <- simplify_transectlayout(input_path,
 ```
 
 
+For this packages we have created a demo dataset which can be used to test the functions. 
 
 ```{r}
 #| eval: false
@@ -63,9 +63,12 @@ transect_layout <- sf::st_read(fs::path(out_dir, "transect_layout_date_creek_dem
 
 ```
 
-#  process Raw field data 
 
-5.1.2 Format field data: 
+
+Format field data: 
+
+Once all the field data is collected it will be saved in a single folder. The coding allows for files to be saved within subfolders. 
+
 
 The format_fielddata() function is used to standardize and consolidate field data. This runs a number of checks including: 
 -	mandatory fields are present
@@ -74,9 +77,18 @@ The format_fielddata() function is used to standardize and consolidate field dat
 -	Fill missing observers 
 -	Check all mandatory data is included
 -	Assign data type (s1 – standard sample 1, and incidentals) 
+
 The script will provide messages where data fails to meet requirements or needs more edits before the data can be consolidated. 
-This should be an iterative process in which the user runs the function, checks for errors , corrects and re-runs until it can be consolidated. 
-The final attribute data set is included in Table 7. 
+This should be an iterative process in which the user runs the function, checks for errors , corrects and re-runs until it can be consolidated.
+
+
+Additional/ incidental data points. 
+
+In many cases, additional data points may be collected outside the standard transect layout. This is particularly the case for uncommon site series of mapping units. In these cases additional data can be collected and incorporated into the models. This is incorporated into the workflow with the designation of extra_pts is TRUE or FALSE in many following function. 
+
+If additional data is collected outside the standard methodology, the name of file should be specified in the format_fielddata() function, as it will not be put through the entire list of checks that is relevant to transect data. 
+
+In the example below the additional points dataset is called "additional_points.gpkg" and is stored in the same folder as the raw field data.
 
 
 ```{r}
@@ -92,6 +104,7 @@ points <- format_fielddata(rawdat,
   transect_layout,
   buffer = 10,
   write_output = TRUE,
+  extra_points = "additional_points.gpkg",
   out_dir = fs::path(PEMprepr::read_fid()$dir_20105020_clean_field_data$path_rel),
   out_name = "s1_points_raw.gpkg"
 )
@@ -99,7 +112,7 @@ points <- format_fielddata(rawdat,
 ```
 
 
-5.1.3 Format tracklog  
+Format tracklog  
 
 In addition to training point, we consolidate all track logs which are used for QA reference using the function: format_tracklog() . this will compile all tracklogs to together into a single geopackage that can be used for 
 
@@ -118,7 +131,7 @@ tracks <- format_tracklog(rawdat,
 ```
 
 
-# generate mapkey
+# Generate mapkey
 
 ```{r}
 #| eval: false
@@ -136,6 +149,20 @@ key <- generate_mapkey(
 
 # Manually review the generated basemap key file (mapunit.key) and add missing
 # basemapunit calls if needed.
+
+
+Before we begin processing the standard transect data, we can split out any additional data points that have been collected. This can be done by filtering the data_type column in the points data. These will be added back following the processing of the standard transect. 
+
+
+```{r}
+#| eval: false
+extra_pts <- points |>
+  dplyr::filter(data_type == "incidental")
+
+sf::st_geometry(extra_pts) <- "geometry"
+
+```
+
 
 Once the point data has been reviewed we use the make_lines() to attribute the lines between each of the points. This is based on the order attribute and can also be used to check that the points are in logical order. 
 
@@ -194,6 +221,18 @@ pp <- convert_lines_pts(
 ```
 
 
+If we had additional points we can now add these to the processed standard points. 
+
+
+```{r}
+#| eval: false
+# add the extra points + the processed line points and attribute all data
+
+processed_pts <- dplyr::bind_rows(processed_pts, extra_pts)
+
+```
+
+
 
 5.2.4. Attribute all points 
 
@@ -220,9 +259,6 @@ att_pts <- attribute_points(
 
 ```{r}
 #| eval: false
-remotes::install_github("ninoxconsulting/PEMmodelr", ref = "prep_training_data")
-library(PEMmodelr)
-
 generate_covar_key(att_pts, overwrite = TRUE)
 
 ```
