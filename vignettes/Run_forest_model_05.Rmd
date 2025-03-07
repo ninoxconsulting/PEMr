@@ -69,6 +69,7 @@ tpts <- prep_tps(
   covarkey = covarkey,
   attribute = "mapunit_ss_realm",
   bec = sf::st_read(fs::path(PEMprepr::read_fid()$dir_1010_vector$path_rel, "bec.gpkg")),
+  extra_pts = TRUE,
   min_no = 20)
 
 
@@ -170,37 +171,11 @@ tune_bgc <- tune_model_params(
   accuracy_type = "roc_auc"
 )
 
-# add message if failed to run increase the min_no value
-# add output as needed
-
-# if you full output is used you can also generate plots
-#
-# # best_tune <- select_best(tune_res, metric = "accuracy")
-# tune_res |>
-#   tune::collect_metrics()  |>
-#   dplyr::filter(.metric == "roc_auc")  |>
-#   dplyr::select(mean, min_n, mtry)  |>
-#   tidyr::pivot_longer(min_n:mtry,
-#                values_to = "value",
-#                names_to = "parameter"
-#   )  |>
-#   ggplot2::ggplot(ggplot2::aes(value, mean, color = parameter)) +
-#   ggplot2::geom_point(show.legend = FALSE) +
-#   ggplot2::facet_wrap(~parameter, scales = "free_x") +
-#   ggplot2::labs(x = NULL, y = "AUC")
-#
-# best_tune <- tune::select_best(tune_res, metric = "accuracy")
-#
-# write.csv(best_tune, file.path(fid$model_inputs0310[2], "best_tuning.csv"))
-#
-
 
 ```
 
 
-
 ## 2) Run the base model
-
 
 The model framework is based on an iterative leave-one-out process in which the accuracy estimates are generate by holding out one part of the data and then building and predicting with the other portion. Accuracy results are generated for each slice and uncertainty is estimated for the entire model. 
 Accuracy is based on iteration by slice, or by site, where slice numbers are low. 
@@ -212,6 +187,7 @@ This provides;
 3) enables sites to be “blocked” to training and testing sets to prevent the model from training and testing on data from the same site (ie pair of transects). Cross validation is stratified by mapunit and grouped by site id. Test results are reported below.
 4) To ensure an accurate assessment we calculate the average weighted means and standard deviation based on the number of transects per slice. This accounts for sampling structure where there are uneven number of sites per slice. 
 
+Note if additonal points are to be added, those collected outside the standard framework, functions include a extra_pts = TRUE/FALSE parameter. The default is set to FALSE. If additional points are to be added these are designated as "incidental" in the data_type column. These can be further sorted and refined by the user if required. In any case where additional points are used, these points are only included in the training dataset and not the test dataset. 
 
 The first step in model development is running a basic model where no balancing has been applied to the training points. This can provide a basic output, and can also be used to compare the impact of balancing to the basic model. The neighbors designates whether neighboring cells should be included in the model build. Detailed_outputs is not needed in this section, however will be used to calculate theta metrics in the next section. This model will generate a full accuracy assessment using the slices testing and training leave one out method as described above.   
 
@@ -232,15 +208,17 @@ fmat <- read.csv(file.path(out_dir, "fuzzy_matrix.csv" )) |>
 # read in reduced covariate list 
 covars = read.csv(fs::path(out_dir, "reduced_covariate_list.csv")) |> dplyr::pull()
 
-
 ## Run base model
 run_base_model(
   bgc_pts_subzone = bgc_pts_subzone,
   fuzz_matrix = fuzz_matrix,
   covars = covars,
   use_neighbours = FALSE,
+  extra_pts = TRUE,
+  report = FALSE,
   detailed_output = TRUE,
   out_dir = out_dir)
+
 
 ```
 
@@ -248,7 +226,7 @@ run_base_model(
 
 # 3) Run final model
 
-If we are looking for a simple unbalanced and base output we can use this model to generate a final fit. Note random forest are highly succeptable to imbalance in training points and these features will be discussed below. 
+If we are looking for a simple unbalanced and base output we can use this model to generate a final fit. Note random forest are highly susceptible to imbalance in training points and these features will be discussed below. 
 
 The final fit uses all the data and does not use Leave-one-out process. 
 This can be run with the raw data (unbalanced) or with the balanced outputs. 
@@ -264,6 +242,7 @@ final_mod <- run_final_model(train_data,
                              covars,
                              model_bal = "base",
                              report = FALSE,
+                             extra_pts = TRUE,
                              out_dir = out_dir)
 
 ```
@@ -397,6 +376,7 @@ bgc_pts_subzone <- readRDS(fs::path(out_dir , "model_input_pts.rds"))
 run_balance_optimisation(bgc_pts_subzone,
                          fuzz_matrix,
                          covars,
+                         extra_pts = FALSE,
                          out_dir,
                          ds_iterations = c(10, 20,  30, 40, 50, 60, 70, 80, 90),
                          smote_iterations = c(0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9),
@@ -441,6 +421,7 @@ run_final_model(
   model_bal = model_bal,
   report = FALSE,
   out_dir = out_dir,
+  extra_pts = FALSE,
   ds_ratio = NA,
   sm_ratio = NA
 )
