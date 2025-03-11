@@ -83,13 +83,18 @@ Note for this model the types include forest/non-forest and non-vegetated so we 
 ```{r}
 #| eval: false
 #| 
-# this is currently a placeholder that Claire is working on.
-# it is possible to use the existing fuzzy_matrix.csv files until this is completed
+fmat <- generate_fuzzymatrix(tpts, 
+                             "bgc_cat", 
+                             out_dir = out_dir,
+                             out_name = "fuzzy_matrix.csv",
+                             write_output = FALSE,
+                             overwrite = TRUE)
 
-#fuzzy_matrix <- read.csv(fs::path("fuzzy_matrix.csv" ))
-#utils::write.csv(fuzzy_matrix, fs::path(out_dir, "fuzzy_matrix.csv"), row.names = FALSE)
+fmat <- read.csv(fs::path(out_dir, "fuzzy_matrix.csv" ))
 
 ```
+
+Note a warning message will show if not all units are included in the fuzzy matrix. This will need to be manually checked to ensure all units are included or the model runs will throw errors.
 
 
 
