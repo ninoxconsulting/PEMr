@@ -102,11 +102,12 @@ The final output is a list of all mapunits within the tpts$mapunit1 column and c
 ```{r}
 #| eval: false
 #| 
-# this is currently a placeholder that Claire is working on.
-# it is possible to use the existing fuzzy_matrix.csv files until this is completed
-
-#fuzzy_matrix <- read.csv(fs::path("fuzzy_matrix.csv" ))
-#utils::write.csv(fuzzy_matrix, fs::path(out_dir, "fuzzy_matrix.csv"), row.names = FALSE)
+fmat <- generate_fuzzymatrix(tpts, 
+                             "bgc_cat", 
+                             out_dir = out_dir,
+                             out_name = "fuzzy_matrix.csv",
+                             write_output = TRUE,
+                             overwrite = TRUE)
 
 ```
 
