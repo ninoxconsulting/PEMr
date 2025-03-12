@@ -43,6 +43,7 @@ tpts <- prep_tps(
   mapkey = read.csv(fs::path(PEMprepr::read_fid()$dir_30_model$path_rel,"mapunitkey_final.csv")),
   covarkey = read.csv(fs::path(PEMprepr::read_fid()$dir_30_model$path_rel,"covar_key.csv")),
   attribute = "mapunit_nf1",
+  extra_pts = TRUE,
   bec = sf::st_read(fs::path(PEMprepr::read_fid()$dir_1010_vector$path_rel, "bec.gpkg")),
   min_no = 20)
 
@@ -125,6 +126,7 @@ model_bgc <- prep_model_tps(
   prepped_points = tpts,
   covars = reduced_vars,
   model_type = "nf",
+  outname = "model_input_pts.rds",
   out_dir = out_dir
 )
 
@@ -156,8 +158,7 @@ out_dir = fs::path(PEMprepr::read_fid()$dir_3020_draft$path_rel, "30_nf")
 
 bgc_pts_subzone <- readRDS(fs::path(out_dir, "model_input_pts.rds"))
 
-fuzz_matrix <- read.csv(file.path(out_dir, "fuzzy_matrix.csv" )) |>
-  dplyr::select(target, Pred, fVal)
+fuzz_matrix <- read.csv(file.path(out_dir, "fuzzy_matrix.csv" )) 
 
 covars = read.csv(fs::path(out_dir, "reduced_covariate_list.csv")) |> dplyr::pull()
 
@@ -168,19 +169,13 @@ run_base_model(
   fuzz_matrix = fuzz_matrix,
   covars = covars,
   use_neighbours = FALSE,
+  extra_pts = TRUE,
+  report = FALSE,
   detailed_output = TRUE,
   out_dir = out_dir)
 
 
 ```
-
-
-######################
-# 3) Balance?
-######################
-
-
-
 
 
 
@@ -200,6 +195,7 @@ final_mod <- run_final_model(train_data,
                              covars,
                              model_bal = "base",
                              report = FALSE,
+                             extra_pts = TRUE,
                              out_dir = out_dir)
 
 ```
@@ -226,6 +222,122 @@ run_predict_map(
   bec_shp = bec_shp
 )
 ```
+
+
+Advanced modeling options (optional)
+
+```{r}
+#| eval: false
+
+# 4.1 Determine optimum Theta value for the metric of choice
+# run all theta options and consolidate output
+
+out_dir = fs::path(PEMprepr::read_fid()$dir_3020_draft$path_rel, "30_nf")
+
+# read in data
+bgc_pts_subzone <- readRDS(fs::path(out_dir, "model_input_pts.rds"))
+
+# read in fuzzy matrix
+fuzz_matrix <- read.csv(file.path(out_dir, "fuzzy_matrix.csv" ))
+
+run_theta_metrics(bgc_pts_subzone, out_dir, fuzz_matrix, overwrite = TRUE)
+
+
+############################################################
+
+# 4.2 Determine to optimum Balance options for models
+
+############################################################
+
+## Build grid of combinations of downsampling and smoting and run all
+## combinations then compare outputs to assess optimum
+## Note optimum will depend on which outcome desired.
+
+out_dir = fs::path(PEMprepr::read_fid()$dir_3020_draft$path_rel, "30_nf")
+
+fuzz_matrix <- read.csv(fs::path(out_dir , "fuzzy_matrix.csv" ))
+
+covars = read.csv(fs::path(out_dir , "reduced_covariate_list.csv")) |> dplyr::pull()
+
+# read in data
+bgc_pts_subzone <- readRDS(fs::path(out_dir , "model_input_pts.rds"))
+
+run_balance_optimisation(bgc_pts_subzone,
+                         fuzz_matrix,
+                         covars,
+                         extra_pts = TRUE,
+                         out_dir,
+                         ds_iterations = 10, # c(10, 20,  30, 40, 50, 60, 70, 80, 90),
+                         smote_iterations = NA, #c(0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9),
+                         use_neighbours = FALSE)
+
+
+
+
+
+```
+
+
+```{r}
+#| eval: false
+
+############################################################
+
+## 4.3) Run the final model with the balance option
+
+############################################################
+
+out_dir = fs::path(PEMprepr::read_fid()$dir_3020_draft$path_rel, "30_nf")
+
+fuzz_matrix <- read.csv(fs::path(out_dir , "fuzzy_matrix.csv" ))
+
+covars = read.csv(fs::path(out_dir , "reduced_covariate_list.csv")) |> dplyr::pull()
+
+bgc_pts_subzone <- readRDS(fs::path(out_dir , "model_input_pts.rds"))
+
+model_bal = "aspat_paf_theta0"
+
+# "aspat_paf_theta.5" ,"aspat_paf_theta0" ,
+# "aspat_paf_theta1" , "aspatial_sum", "spat_paf_theta.5" , "spat_paf_theta0", "spat_paf_theta1",
+#  "spatial_sum", "overall"
+
+run_final_model(
+  train_data = bgc_pts_subzone,
+  covars = covars,
+  model_bal = model_bal,
+  report = FALSE,
+  out_dir = out_dir,
+  extra_pts = TRUE,
+  ds_ratio = NA,
+  sm_ratio = NA
+)
+
+
+######################
+# 4) Predict maps -  balanced model
+######################
+
+model_dir = fs::path(PEMprepr::read_fid()$dir_3020_draft$path_rel, "30_nf")
+covars = read.csv(fs::path(model_dir, "reduced_covariate_list.csv")) |>  dplyr::pull()
+cov_dir = fs::path(PEMprepr::read_fid()$dir_1020_covariates$path_rel, "5m")
+tile_dir = fs::path(PEMprepr::read_fid()$dir_30_model$path_rel,"tiles")
+bec_shp = sf::st_read(fs::path(PEMprepr::read_fid()$dir_1010_vector$path_rel,"bec.gpkg"), quiet = TRUE)
+model_name = "final_model_aspat_paf_theta0.rds"
+
+run_predict_map(
+  model_type = "nf",
+  model_dir = model_dir,
+  model_name = model_name,
+  covars = covars,
+  cov_dir = cov_dir,
+  tile_dir = tile_dir,
+  bec_shp = bec_shp
+)
+
+
+```
+
+
 
 
 
