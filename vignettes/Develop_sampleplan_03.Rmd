@@ -210,7 +210,7 @@ check_roads(roadsls)
 
 # Generate a start location 
 
-For each study area you will need to define a start location from which the costs will accumulate. Depending on the study area, this might be a single or multiple locations. In most cases you need to select a location based within the study AOI. If this is not the case your aoi should be expanded or additonal time calculated from start point to actual starting location. 
+For each study area you will need to define a start location from which the costs will accumulate. Depending on the study area, this might be a single or multiple locations. In most cases you need to select a location based within the study AOI. If this is not the case your aoi should be expanded or additional time calculated from start point to actual starting location. 
 
 In this example we show two methods to generate a start location. The first is to use a major town as the start location. The second is to use a user defined location.
 
@@ -248,19 +248,21 @@ sf::st_write(start, fs::path(out_dir, "start.gpkg"), append = FALSE)
 
 ```{r}
 #| eval: false
-## Generate the cost layer - need to review these two scripts and decided which method to use. 
-## These can be run as stand alone scripts and are located here: 
+## Generate the cost layer - this currently uses the original cost layer script; 
 
-#https://github.com/ninoxconsulting/PEMsamplr/blob/main/R/placeholder_prep_cost_layer_old.R
+sampleplan_dir <- PEMprepr::read_fid()$dir_201010_inputs$path_rel
+vec_dir = PEMprepr::read_fid()$dir_1010_vector$path_rel
+out_dir = PEMprepr::read_fid()$dir_201010_inputs$path_rel
+heli = FALSE
 
 
-## Currently there are two options
-## old version
-#03_sample_plan_new_version.R
+acost <- prep_cost_layer(vec_dir, sampleplan_dir, 
+                         out_dir, 
+                         heli = FALSE, 
+                         write_output = TRUE, 
+                         overwrite = FALSE)
 
-## new version
-#03_sample_plan_new_version.R
-#fn_prep_cost_layer_utils.R
+
 
 ```
 
