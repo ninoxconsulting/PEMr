@@ -263,7 +263,6 @@ acost <- prep_cost_layer(vec_dir, sampleplan_dir,
                          overwrite = FALSE)
 
 
-
 ```
 
 
