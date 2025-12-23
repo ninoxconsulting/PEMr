@@ -28,11 +28,291 @@ library(PEMr)
 To optimise the accuracy of modelling (and final map) for both forested and non-forested areas with the study area, we use a three part workflow to build the final map. We will build up to three separate components and then assemble the maps. This is required to both improve accuracy and address challenged in which set of covariates can be used to model forest vs non-forest mapunits. 
 
 Broadly we will 
-1)  Build a forest / non-forest model and map. This will provide a mask to differentiate areas  between forest and non-forest regions.
+1)  Build a forest / non-forest binary map. This is a heiristic process to broadly define the non-forested from forested areas. This will provide a mask to differentiate areas  between forest and non-forest pixals.
 
-2) Build a forest model per BGC variant and assemble to a single forested layer. As this is the focus of PEM modelling this modelling component provides the most detailed model build parameters and additional methodology 
+2) Build a forest machine learning model per BGC variant and assemble to a single forested layer. As this is the focus of PEM modelling this modelling component provides the most detailed model build parameters and additional methodology 
 
 3) Build a non-forest model for the entire study area. This methodology is similar to forested workflow and can be replaces with other non-forest mapping products.
+
+
+
+The first step is to set up the folder to use to store the model inputs and outputs 
+
+
+```{r}
+#| eval: false
+# create folders structure for the model - to be added to filestructure in PEMr
+
+if(!dir.exists(fs::path(PEMprepr::read_fid()$dir_3020_draft$path_rel, "10_fnf"))){
+  fs::dir_create(fs::path(PEMprepr::read_fid()$dir_3020_draft$path_rel, "10_fnf"))
+}
+
+if(!dir.exists(fs::path(PEMprepr::read_fid()$dir_3020_draft$path_rel, "20_f"))){
+  fs::dir_create(fs::path(PEMprepr::read_fid()$dir_3020_draft$path_rel, "20_f"))
+}
+
+
+if(!dir.exists(fs::path(PEMprepr::read_fid()$dir_3020_draft$path_rel, "30_nf"))){
+  fs::dir_create(fs::path(PEMprepr::read_fid()$dir_3020_draft$path_rel, "30_nf"))
+}
+
+```
+
+
+
+## Generate the forest - non-forest binary mask 
+
+```{r read in libs, eval = FALSE}
+#| eval: false
+
+library(PEMr)
+library(PEMprepr)
+library(PEMsamplr)
+library(PEMmodelr)
+
+library(terra)
+library(fs)
+library(dplyr)
+library(sf)
+
+```
+
+
+placeholder script to be refined. 
+
+```{r read, eval = FALSE}
+#| eval: false
+
+
+############################
+## 1 prep forest_non_forest layer
+############################
+
+out_dir <- fs::path(PEMprepr::read_fid()$dir_3020_draft$path_rel, "10_fnf")
+covar_dir <- fs::path(PEMprepr::read_fid()$dir_1020_covariates$path_rel, "5m")
+
+# inrast <- rast(fs::path("00_raw_inputs", "20_lidar", "40_chm", "cov_gap_mosaic_rproj.tif"))
+# inrast <- crop(inrast, p90)
+# inrast <- project(inrast, p90)
+# writeRaster(inrast, fs::path(covar_dir, "cov_gap_mosaic_rproj.tif"))
+
+# read in aoi
+aoi <- vect(fs::path(PEMprepr::read_fid()$dir_1010_vector$path_rel, "aoi_snapped.gpkg"))
+
+# read in template
+template <- rast(fs::path(covar_dir, "template.tif"))
+
+# read in cov gap layer
+covgap <- rast(path(covar_dir, "cov_gap_mosaic_rproj.tif"))
+covgap <- ifel(is.na(covgap), 1, covgap)
+
+# read in 90% cover
+p90 <- rast(path(covar_dir, "p90_mosaic_rproj.tif"))
+
+# read in bgc
+if (file.exists(fs::path(covar_dir, "bec.tif"))) {
+  bgc <- rast(fs::path(covar_dir, "bec.tif"))
+} else {
+  # create BGC if missing
+  bgc <- create_bgc_template(
+    field = "MAP_LABEL",
+    template = template,
+    out_dir = fs::path(PEMprepr::read_fid()$dir_1020_covariates$path_rel),
+    write_output = TRUE
+  )
+}
+
+
+# 1) create a forest binary, based on lidar derived variable. T
+
+# This requires manual review;
+
+# review of covariates spatially indicates that if stands are both open and short,
+# they are likely to be non-forest
+
+# not sure how to turn this into a specific filter as so dependant on selection?
+
+forest_binary <- (
+  ((covgap > 0.8)) | ## very open sites
+    ((bgc != 3) & (covgap > 0.48) & (p90 < 10)) | ## lower elevation bogs
+    ((bgc == 3) & (p90 <= 4)) ## short statured woodland sites
+  ## need a rule for heavily beetle-killed forest
+) * 1
+
+
+
+# create a disturbed forested layer
+
+# read in human disturbacne
+
+# manual download of Hunman disturbance
+# BC_CEF_Human_Disturbance_2023\BC_CEF_Human_Disturbance_2
+# https://catalogue.data.gov.bc.ca/dataset/7d61ff12-b85f-4aeb-ac8b-7b10e84b046c
+# this has to be a manual process
+
+human_disturbance <- terra::vect(fs::path(PEMprepr::read_fid()$dir_0010_vector$path_abs, "bc_cef_human_disturbance_clip1.gpkg"))
+disturbed <- terra::crop(human_disturbance, aoi)
+disturbed_forest <- c("Agriculture_and_Clearing", "RESULTS_Reserves", "Mining_and_Extraction")
+disturbed_sub <- disturbed[disturbed$CEF_DISTURB_GROUP %in% disturbed_forest, ]
+disturbed_sub <- sf::st_as_sf(disturbed_sub)|>
+  dplyr::mutate(type = "disturbed") |>
+  dplyr::select(type)
+
+
+cutblock <- sf::st_read(fs::path(PEMprepr::read_fid()$dir_1010_vector$path_rel, "cutblocks.gpkg"))
+#cutblock2 <- sf::st_read(fs::path(PEMprepr::read_fid()$dir_1010_vector$path_rel, "cutblocks_ften.gpkg"))
+
+#forest_disturbed <- sf::st_join(cutblock1, cutblock2) |>
+forest_dist <-   cutblock |>
+  dplyr::mutate(type = "disturbed") |> dplyr::select(type)
+
+sf::st_geometry(forest_dist) = "geometry"
+
+forest_disturbed <- rbind(forest_dist, disturbed_sub)
+#plot(forest_disturbed)
+
+
+# Add a 5m outer buffer
+forest_disturbed_buffered <- sf::st_buffer(forest_disturbed, dist = 10)
+
+disturbed_rast <- terra::rasterize(forest_disturbed_buffered, template, field = 0, background = NA)
+writeRaster(disturbed_rast, fs::path(PEMprepr::read_fid()$dir_3010_inputs$path_abs, "disturbed_forest.tif"), overwrite = TRUE)
+
+#plot(deception_disturbed_rast)
+forest_clean <- ifel(disturbed_rast == 0, 0, forest_binary)
+forest_clean2 <- mask(forest_clean, aoi)
+
+forest_clean2 <- forest_clean2 |>
+  tidyterra::rename("forest_nonforest" =  cov_gap_mosaic_rproj)
+
+# add a sieve to remove indivdual pixals
+forest_clean2 <- terra::sieve(forest_clean2, 2, directions=8)
+
+#plot(forest_clean2)
+writeRaster(forest_clean2, fs::path(PEMprepr::read_fid()$dir_3010_inputs$path_abs, "forest_nonforest_final.tif"), overwrite = TRUE)
+# 0 = forest, 1 - non-forest
+
+
+```
+
+
+
+
+
+
+
+
+ Check how well the accuracy of the forest-nono-forest map is. This is to be turned nto a function. 
+
+
+```{r binary checks}
+#| eval: false
+
+########################################################
+#######################################################
+## check accuracy of the non-forest model - perhaps create a separate function for this
+
+
+forest_clean2 <- rast(fs::path(PEMprepr::read_fid()$dir_3010_inputs$path_abs, "forest_nonforest_final.tif"))
+
+# Load and filter points
+mapkey = read.csv(fs::path(PEMprepr::read_fid()$dir_30_model$path_abs, "mapunitkey_final.csv"))
+attribute = "mapunit_ss_realm"
+
+
+all_data = sf::st_read(fs::path(PEMprepr::read_fid()$dir_20105030_attributed_field_data$path_rel, "allpoints_att.gpkg"))
+all_data = all_data |>
+  select(mapunit1, mapunit2, transect_id, data_type, tid, slice, position, ID,)
+
+# intersect with BEC zone and add column
+bec = sf::st_read(fs::path(PEMprepr::read_fid()$dir_1010_vector$path_rel, "bec.gpkg"))
+# assign BEC zone to each point
+subzones <- unique(bec$MAP_LABEL)
+subzones <- tolower(gsub("\\s+", "", subzones))
+
+# Intersect BEC zones and format the dataset
+all_data <- sf::st_join(all_data, bec[, "MAP_LABEL"])
+
+
+# format the mapunit 1 and 2 based on the attribute in mapkey selected above.
+# Note this requires the key to be filled out.
+# assign map unit name based on mapkey
+mpts <- set_mapunits(all_data, mapkey, attribute)
+
+# assign a forest/non _forest based on field call/mapunit structure
+all_data <- mpts |>
+  dplyr::mutate(fnfunits = ifelse(grepl(paste0(subzones, collapse = "|"), tolower(.data$mapunit1)), "forest", "non_forest")) |>
+  dplyr::rename(bgc_cat = MAP_LABEL) |>
+  dplyr::rename_all(.funs = tolower)
+
+unique(all_data$mapunit1)
+
+#trDat <- all_data |>
+#  dplyr::filter(data_type == "s1")
+
+# add coordinats
+trDat <- cbind(trDat, sf::st_coordinates(trDat))
+#st_write(trDat, "testing_pt_att_withmask2.gpkg")
+
+# intersect with the forest_non_forest Binary to assign values
+trDat$forest_class <- terra::extract(forest_clean2, vect(trDat))$forest_nonforest
+
+trDat <- trDat |>
+  dplyr::mutate(forest_class = ifelse(forest_class == 1, "non-forest", "forest"))
+
+# list of non-forest units
+nf_units <- c("A", "W", "R", "X", "F", "N", "Z", "U", "H", "Z", "NF")
+
+trDat2 <- trDat |>
+  mutate(nf_correct1 = ifelse(stringr::str_ends(mapunit1, paste0(nf_units, collapse = "|")), "non-forest", "forest")) |>
+  mutate(nf_correct2 = ifelse(stringr::str_ends(mapunit2, paste0(nf_units, collapse = "|")), "non-forest", "forest")) |>
+  mutate(correct_value = case_when(
+    forest_class == nf_correct1 ~ 1,
+    forest_class == nf_correct2 ~ 1,
+    .default = 0
+  ))
+
+
+# Testing
+# aa <- trDat2 |>
+#   select(mapunit1,mapunit2,  forest_class,nf_correct1, nf_correct2, correct_value) |> as.data.frame()
+
+
+trDat3 <- trDat2 %>% data.frame()
+
+acc <- trDat3 %>% filter(position == "Orig") %>%
+  group_by(forest_class, correct_value) %>%
+  summarise(count = n()) %>% ungroup %>% mutate(count = as.numeric(count))
+
+acc <- acc %>%
+  mutate(predicted_label = ifelse(forest_class == 99, "Non-Forest", "Forest"),
+         actual_label = ifelse(correct_value == 1, "Forest", "Non-Forest"))
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+## OUTDATED VERSION 
+
 
 
 

@@ -24,16 +24,19 @@ area of interest}
 
 \item{rstudio}{If \code{TRUE}, calls \code{\link[usethis:use_rstudio]{use_rstudio()}} to make the new package or
 project into an \href{https://r-pkgs.org/workflow101.html#sec-workflow101-rstudio-projects}{RStudio Project}.
-If \code{FALSE} and a non-package project, a sentinel \code{.here} file is placed so
-that the directory can be recognized as a project by the
-\href{https://here.r-lib.org}{here} or
-\href{https://rprojroot.r-lib.org}{rprojroot} packages.}
+
+If \code{FALSE}, the goal is to ensure that the directory can be recognized as
+a project by, for example, the \href{https://here.r-lib.org}{here} package. If
+the project is neither an R package nor a Quarto project, a sentinel
+\code{.here} file is placed to mark the project root.}
 
 \item{open}{If \code{TRUE}, \link[usethis:proj_activate]{activates} the new project:
 \itemize{
-\item If using RStudio desktop, the package is opened in a new session.
-\item If on RStudio server, the current RStudio project is activated.
-\item Otherwise, the working directory and active project is changed.
+\item If using RStudio or Positron, the new project is opened in a new session,
+window, or browser tab, depending on the product (RStudio or Positron)
+and context (desktop or server).
+\item Otherwise, the working directory and active project of the current R
+session are changed to the new project.
 }}
 }
 \value{

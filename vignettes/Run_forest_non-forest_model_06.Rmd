@@ -82,7 +82,7 @@ Note for this model the types include forest/non-forest and non-vegetated so we 
 
 ```{r}
 #| eval: false
-#| 
+
 fmat <- generate_fuzzymatrix(tpts, 
                              "bgc_cat", 
                              out_dir = out_dir,

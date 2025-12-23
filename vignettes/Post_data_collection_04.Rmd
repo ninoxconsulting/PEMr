@@ -26,7 +26,7 @@ library(PEMr)
 # read in the raw field data and prepare it for PEM analysis
 library(PEMsamplr)
 
-remotes::install_github("ninoxconsulting/PEMmodelr", ref = "prep_training_data")
+#remotes::install_github("ninoxconsulting/PEMmodelr", ref = "prep_training_data")
 library(PEMmodelr)
 
 ```
@@ -186,36 +186,20 @@ processed_transects <- make_lines(
 The first step in the process is to convert the line segments to points in the matching raster which we are using. We use the convert_lines_pts() function to create a point file that contains all the values of lines within the template of the raster. 
 Note this will result in some points being attributed outside the space of the lines and will be addressed with the spatial misregistration and neighbourhood calculation accuracy metrics. 
 
-
-5.2.3. Add neighbouring cells
-
-Use add_neighbours() function will add all the values on the adjoining cells (ie: all surrounding cells). These are labelled “Orig” for original cell and “Adj” for all adjacent cells. Each pixal is attributed by an ID column to enable for inclusion or exclusion of neighbours in future calculations. 
+By default we now add two rings of neighboutind cells around each individual point. These are denoted in the column position in which the original cell is labelled “Orig” and “Adj” cells are the surrounding cells. Adj1-9 represent the first ring around the original cell, and 10 - 17 is the second ring around the original cells. Each pixal is attributed by an ID column to enable for inclusion or exclusion of neighbours in future calculations. 
 
 
 ```{r}
 #| eval: false
-# convert pt to lines (2 options here)
-# 1. convert points to lines - no neighbours
+# convert pt to lines
+
 processed_pts <- convert_lines_pts(
   processed_lines = processed_transects,
   buffer = 2.5,
-  neighbours = FALSE,
   trast = fs::path(PEMprepr::read_fid()$dir_1020_covariates$path_rel, "5m", "template.tif"),
   write_output = TRUE,
   out_dir = PEMprepr::read_fid()$dir_20105020_clean_field_data$path_rel,
   out_name = "allpoints.gpkg"
-)
-
-#2. convert points to lines - with neighbours
-
-pp <- convert_lines_pts(
-  processed_lines = processed_transects,
-  buffer = 2.5,
-  neighbours = TRUE,
-  trast = fs::path(PEMprepr::read_fid()$dir_1020_covariates$path_rel, "5m", "template.tif"),
-  write_output = FALSE,
-  out_dir = PEMprepr::read_fid()$dir_20105020_clean_field_data$path_rel,
-  out_name = "allpoints_n.gpkg"
 )
 
 ```
