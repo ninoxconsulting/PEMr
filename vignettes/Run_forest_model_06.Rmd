@@ -403,7 +403,6 @@ out_dir <- fs::path(model_dir, bec, "map")
 map_label = "final_map.tif"
 
 
-
 predict_map(
   bec = bec,
   bec_shp = bec_shp,
