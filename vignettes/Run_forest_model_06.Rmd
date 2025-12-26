@@ -223,24 +223,38 @@ This is an optional step for more detailed outputs.
 ```{r}
 #| eval: false
 
-out_dir = fs::path(PEMprepr::read_fid()$dir_3020_draft$path_rel, "20_f")
 
-fuzz_matrix <- read.csv(fs::path(out_dir , "fuzzy_matrix.csv" )) |>
-  dplyr::select(target, Pred, fVal)
+out_dir <- fs::path(PEMprepr::read_fid()$dir_3020_draft$path_rel, "20_f")
+bgc_pts_subzone <- readRDS(fs::path(out_dir, "model_input_pts.rds"))
+fuzz_matrix <- read.csv(file.path(out_dir, "fuzzy_matrix.csv")) |> dplyr::select(target, Pred, fVal)
+covars <- read.csv(fs::path(out_dir, "reduced_covariate_list.csv")) |> dplyr::pull()
+nf_f_filter <- terra::rast(fs::path(PEMprepr::read_fid()$dir_3010_inputs$path_abs, "forest_nonforest_final.tif"))
 
-covars = read.csv(fs::path(out_dir , "reduced_covariate_list.csv")) |> dplyr::pull()
-# read in data
-bgc_pts_subzone <- readRDS(fs::path(out_dir , "model_input_pts.rds"))
 
-run_balance_optimisation(bgc_pts_subzone,
-                         fuzz_matrix,
-                         covars,
-                         extra_pts = FALSE,
-                         out_dir,
-                         ds_iterations = c(10, 20,  30, 40, 50, 60, 70, 80, 90),
-                         smote_iterations = c(0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9),
-                         use_neighbours = FALSE)
+bec <- "ICHmc1" # "ESSFwv" "ICHmc2"
+out_bgc_dir <- fs::path(out_dir, bec)
 
+# read best tune
+best_tune <- utils::read.csv(fs::path(out_bgc_dir, "best_tuning.csv"))
+mtry <- best_tune$mtry
+min_n <- best_tune$min_n
+
+balance_optimisation(
+  bgc_pts_subzone = bgc_pts_subzone,
+  bec = bec,
+  fuzz_matrix = fuzz_matrix,
+  nf_f_filter = nf_f_filter,
+  covars = covars,
+  mtry = mtry,
+  min_n = min_n,
+  ntrees = 151,
+  downsample_ratio = c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
+  smote_ratio = c(0.05, 0.1),
+  use_neighbours = TRUE,
+  extra_pts = TRUE,
+  extra_pts_ratio = 0.1,
+  out_dir = out_bgc_dir
+)
 
 ```
 
@@ -333,6 +347,12 @@ out <- run_full_model(
 ```
 
 
+# 3) Run final model
+
+If we are looking for a simple unbalanced and base output we can use this model to generate a final fit. Note random forest are highly susceptible to imbalance in training points and these features will be discussed below. 
+
+The final fit uses all the data and does not use Leave-one-out process. 
+This can be run with the raw data (unbalanced) or with the balanced outputs. 
 
 
 ```{r run final model}
@@ -380,8 +400,13 @@ final_mod <- run_final_model(model_name = "final",
 ```
 
 
+# 4) Predict maps
 
+We can use the final model fit to predict a forest map per BGC. This function applies to all model types (forest/nonforest, forest and non-forest) as controlled by model type. Model type "f" denotes that the map will be built from individual BGC models and stitched together. Models are predicted onto tiles with a default of 500m size. 
 
+A tile directory will be built and tiles generated on the first time the model is run. These tiles are used for each submodel. 
+
+In this example we use the reduced covariate list however the full covariate list can also be used. 
 
 ```{r predict map}
 #| eval: false
@@ -416,118 +441,9 @@ predict_map(
   map_label = map_label
 )
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-```{r}
-#| eval: false
-
-# designate the directory
-out_dir = fs::path(PEMprepr::read_fid()$dir_3020_draft$path_rel, "20_f")
-
-# read in data
-bgc_pts_subzone <- readRDS(fs::path(out_dir, "model_input_pts.rds"))
-
-# read in fuzzy matrix
-fmat <- read.csv(file.path(out_dir, "fuzzy_matrix.csv" )) |>
-  dplyr::select(target, Pred, fVal)
-
-# read in reduced covariate list 
-covars = read.csv(fs::path(out_dir, "reduced_covariate_list.csv")) |> dplyr::pull()
-
-## Run base model
-run_base_model(
-  bgc_pts_subzone = bgc_pts_subzone,
-  fuzz_matrix = fuzz_matrix,
-  covars = covars,
-  use_neighbours = FALSE,
-  extra_pts = TRUE,
-  report = FALSE,
-  detailed_output = TRUE,
-  out_dir = out_dir)
-
-
 ```
 
 
-
-# 3) Run final model
-
-If we are looking for a simple unbalanced and base output we can use this model to generate a final fit. Note random forest are highly susceptible to imbalance in training points and these features will be discussed below. 
-
-The final fit uses all the data and does not use Leave-one-out process. 
-This can be run with the raw data (unbalanced) or with the balanced outputs. 
-
-```{r}
-#| eval: false
-
-out_dir = fs::path(PEMprepr::read_fid()$dir_3020_draft$path_rel, "20_f")
-train_data <- readRDS(fs::path(out_dir, "model_input_pts.rds"))
-covars <- read.csv(fs::path(out_dir, "reduced_covariate_list.csv")) |> dplyr::pull()
-
-final_mod <- run_final_model(train_data,
-                             covars,
-                             model_bal = "base",
-                             report = FALSE,
-                             extra_pts = TRUE,
-                             out_dir = out_dir)
-
-```
-
-
-# 4) Predict maps
-
-We can use the final model fit to predict a forest map per BGC. This function applies to all model types (forest/nonforest, forest and non-forest) as controlled by model type. Model type "f" denotes that the map will be built from individual BGC models and stitched together. Models are predicted onto tiles with a default of 500m size. 
-
-A tile directory will be built and tiles generated on the first time the model is run. These tiles are used for each submodel. 
-
-In this example we use the reduced covariate list however the full covariate list can also be used. 
-
-
-```{r}
-#| eval: false
-
-model_dir = fs::path(PEMprepr::read_fid()$dir_3020_draft$path_rel, "20_f")
-covars = read.csv(fs::path(model_dir, "reduced_covariate_list.csv")) |>  dplyr::pull()
-cov_dir = fs::path(PEMprepr::read_fid()$dir_1020_covariates$path_rel, "5m")
-tile_dir = fs::path(PEMprepr::read_fid()$dir_30_model$path_rel,"tiles")
-bec_shp <- sf::st_read(fs::path(PEMprepr::read_fid()$dir_1010_vector$path_rel,"bec.gpkg"), quiet = TRUE)
-
-run_predict_map(
-  model_type = "f",
-  model_dir = model_dir,
-  model_name = "final_model_base.rds",
-  covars = covars,
-  cov_dir = cov_dir,
-  tile_dir = tile_dir,
-  bec_shp = bec_shp
-)
-
-```
 
 
 
@@ -564,85 +480,4 @@ run_theta_metrics(bgc_pts_subzone, out_dir, fuzz_matrix, overwrite = TRUE)
 ```
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# 5.3) Run the final model with the optimal balance
-
-Once we have gone though these steps and assessed the optimum balancing and theta for the desires accuracy measure we can can run the final model with the balance option. 
-
-The options available include: c( "aspat_paf_theta.5" ,"aspat_paf_theta0" ,
-"aspat_paf_theta1" , "aspatial_sum", "spat_paf_theta.5" , "spat_paf_theta0", "spat_paf_theta1",
- "spatial_sum", "overall")
-
-
-```{r}
-#| eval: false
-
-out_dir = fs::path(PEMprepr::read_fid()$dir_3020_draft$path_rel, "20_f")
-
-fuzz_matrix <- read.csv(fs::path(out_dir , "fuzzy_matrix.csv" )) |>
-  dplyr::select(target, Pred, fVal)
-
-covars = read.csv(fs::path(out_dir , "reduced_covariate_list.csv")) |> dplyr::pull()
-
-bgc_pts_subzone <- readRDS(fs::path(out_dir , "model_input_pts.rds"))
-
-model_bal = "aspat_paf_theta0"
-
-# "aspat_paf_theta.5" ,"aspat_paf_theta0" ,
-# "aspat_paf_theta1" , "aspatial_sum", "spat_paf_theta.5" , "spat_paf_theta0", "spat_paf_theta1",
-#  "spatial_sum", "overall"
-
-run_final_model(
-  train_data = bgc_pts_subzone,
-  covars = covars,
-  model_bal = model_bal,
-  report = FALSE,
-  out_dir = out_dir,
-  extra_pts = FALSE,
-  ds_ratio = NA,
-  sm_ratio = NA
-)
-
-```
-
-
-# 5.4) Predict maps -  balanced model
-
-```{r}
-#| eval: false
-
-model_dir = fs::path(PEMprepr::read_fid()$dir_3020_draft$path_rel, "20_f")
-covars = read.csv(fs::path(model_dir, "reduced_covariate_list.csv")) |>  dplyr::pull()
-cov_dir = fs::path(PEMprepr::read_fid()$dir_1020_covariates$path_rel, "5m")
-tile_dir = fs::path(PEMprepr::read_fid()$dir_30_model$path_rel,"tiles")
-bec_shp = sf::st_read(fs::path(PEMprepr::read_fid()$dir_1010_vector$path_rel,"bec.gpkg"), quiet = TRUE)
-model_name = "final_model_aspat_paf_theta0.rds"
-
-run_predict_map(
-  model_type = "f",
-  model_dir = model_dir,
-  covars = covars,
-  cov_dir = cov_dir,
-  tile_dir = tile_dir,
-  bec_shp = bec_shp
-)
-
-
-```
 
